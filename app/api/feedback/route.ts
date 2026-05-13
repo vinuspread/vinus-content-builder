@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
+
+export const maxDuration = 60
 import { supabaseServer } from '@/lib/supabase/server'
 import { anthropic } from '@/lib/anthropic'
 import { FEEDBACK_SYSTEM_PROMPT, buildFeedbackUserPrompt } from '@/lib/prompts/feedback'
