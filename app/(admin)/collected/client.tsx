@@ -56,12 +56,11 @@ export function CollectedList({
       body: JSON.stringify({ sourceContentId: contentId }),
     })
     if (res.ok) {
-      const { id } = await res.json()
-      router.push(`/generated/${id}`)
+      setMsg('생성 완료')
     } else {
       setMsg('생성 실패')
-      setGenerating(null)
     }
+    setGenerating(null)
   }
 
   async function handleTypeChange(contentId: string, typeId: string) {
