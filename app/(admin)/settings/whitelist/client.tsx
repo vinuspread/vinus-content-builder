@@ -62,7 +62,16 @@ export function WhitelistClient({ initialItems }: { initialItems: InstagramWhite
         <tbody>
           {items.map(item => (
             <tr key={item.id} className="border-b">
-              <td className="py-2 pr-4 font-mono text-xs">{item.handle}</td>
+              <td className="py-2 pr-4 font-mono text-xs">
+                <a
+                  href={`https://instagram.com/${item.handle.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  {item.handle}
+                </a>
+              </td>
               <td className="py-2 pr-4 text-muted-foreground text-xs">{item.description}</td>
               <td className="py-2 pr-4">
                 <input type="checkbox" checked={item.is_active}
