@@ -49,6 +49,10 @@ export async function POST(req: NextRequest) {
 
   const result: GenerateResult = JSON.parse(jsonMatch[0])
 
+  if (!Array.isArray(result.carousel) || result.carousel.length !== 6) {
+    return NextResponse.json({ error: `Carousel must have exactly 6 cards, got ${result.carousel?.length ?? 0}` }, { status: 500 })
+  }
+
   const { error } = await supabaseServer
     .from('generated_contents')
     .update({

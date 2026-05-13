@@ -14,24 +14,35 @@ export const FEEDBACK_SYSTEM_PROMPT = `당신은 바이너스프레드 SNS 콘�
 절대 사용 금지 표현: "브랜드 가치를 높입니다", "고객 경험을 향상시킵니다", "차별화된 이미지를 구축합니다",
 "시각적 완성도를 높입니다", "브랜드 아이덴티티를 강화합니다", "최적의 솔루션", "시너지", "트렌디한 감각", "감각적인 무드"
 
+6. 카드 수는 반드시 6장을 유지한다. 피드백에 관계없이 6장 고정.
+
 출력 형식 (반드시 JSON만 반환):
 \`\`\`json
 {
   "contentTitle": "제목",
   "coreMessage": "핵심 메시지",
   "carousel": [
-    { "number": 1, "role": "역할", "headline": "헤드라인", "body": "본문" }
+    {
+      "number": 1,
+      "role": "역할",
+      "headline": "헤드라인",
+      "body": "본문",
+      "expertView": "전문가 관점",
+      "practical": "실무 적용 포인트"
+    }
   ],
   "instagramCaption": "인스타그램 본문",
   "hashtags": ["#해시태그"]
 }
-\`\`\``;
+\`\`\`
+
+carousel 배열은 반드시 6개 항목만 포함한다.`;
 
 export function buildFeedbackUserPrompt(
   existingContent: {
     contentTitle: string | null;
     coreMessage: string | null;
-    carousel: Array<{ number: number; role: string; headline: string; body: string }>;
+    carousel: Array<{ number: number; role: string; headline: string; body: string; expertView: string; practical: string }>;
     instagramCaption: string | null;
     hashtags: string[];
   },

@@ -102,8 +102,20 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
               </div>
               <CardTitle className="text-sm font-semibold leading-snug">{card.headline}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{card.body}</p>
+              {card.expertView && (
+                <div className="rounded-md bg-muted/40 px-3 py-2 space-y-0.5">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">전문가 관점</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{card.expertView}</p>
+                </div>
+              )}
+              {card.practical && (
+                <div className="rounded-md bg-muted/40 px-3 py-2 space-y-0.5">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">실무 적용</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{card.practical}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}

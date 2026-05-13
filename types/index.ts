@@ -71,6 +71,8 @@ export type CarouselCard = {
   role: string
   headline: string
   body: string
+  expertView: string
+  practical: string
 }
 
 export type GeneratedContent = {
