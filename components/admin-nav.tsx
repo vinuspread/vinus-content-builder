@@ -21,10 +21,10 @@ export function AdminNav() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-14 items-center px-6 gap-6">
-        <span className="font-semibold text-sm tracking-tight">바이너스 빌더</span>
-        <nav className="flex items-center gap-1">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
+      <div className="flex h-14 items-center px-6 gap-8">
+        <span className="font-bold text-sm tracking-tight text-foreground">바이너스 빌더</span>
+        <nav className="flex items-center gap-2">
           {navLinks.map(link => {
             const active = pathname.startsWith(link.prefix)
             return (
@@ -32,7 +32,10 @@ export function AdminNav() {
                 <Button
                   variant={active ? 'secondary' : 'ghost'}
                   size="sm"
-                  className={cn('text-sm', !active && 'text-muted-foreground')}
+                  className={cn(
+                    'text-sm font-medium transition-none',
+                    !active && 'text-muted-foreground hover:text-foreground'
+                  )}
                 >
                   {link.label}
                 </Button>
@@ -41,7 +44,12 @@ export function AdminNav() {
           })}
         </nav>
         <div className="ml-auto">
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleLogout} 
+            className="text-muted-foreground hover:text-foreground transition-none"
+          >
             로그아웃
           </Button>
         </div>
