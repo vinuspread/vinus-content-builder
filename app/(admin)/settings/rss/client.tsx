@@ -49,7 +49,7 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
   return (
     <div className="max-w-3xl space-y-4">
       {/* 카테고리 탭 */}
-      <div className="flex gap-0 border-b overflow-x-auto">
+      <div className="flex flex-wrap gap-0 border-b">
         {RSS_GROUPS.map(g => {
           const count = sources.filter(s => s.group_name === g).length
           return (
