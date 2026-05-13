@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { CollectedContent, ContentType } from '@/types'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 export function CollectedList({
   contents,
@@ -24,9 +26,9 @@ export function CollectedList({
     const res = await fetch('/api/collect', { method: 'POST' })
     const data = await res.json()
     if (data.errors?.length) {
-      setMsg(`수집 완료: Instagram ${data.instagram}개, RSS ${data.rss}개 (오류: ${data.errors.join(', ')})`)
+      setMsg(`수집 완료 — Instagram ${data.instagram}개, RSS ${data.rss}개 · 오류: ${data.errors.join(', ')}`)
     } else {
-      setMsg(`수집 완료: Instagram ${data.instagram}개, RSS ${data.rss}개`)
+      setMsg(`수집 완료 — Instagram ${data.instagram}개, RSS ${data.rss}개`)
     }
     setCollecting(false)
     router.refresh()
@@ -41,7 +43,7 @@ export function CollectedList({
       body: '{}',
     })
     const data = await res.json()
-    setMsg(`분류 완료: ${data.classified}개`)
+    setMsg(`분류 완료 — ${data.classified}개`)
     setClassifying(false)
     router.refresh()
   }
@@ -79,29 +81,22 @@ export function CollectedList({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 flex-wrap">
-        <h1 className="text-sm font-semibold">수집콘텐츠</h1>
-        <button
-          onClick={handleCollect}
-          disabled={collecting}
-          className="bg-foreground text-background rounded px-3 py-1.5 text-xs font-medium disabled:opacity-50"
-        >
+    <div className="space-y-5">
+      {/* 헤더 액션 바 */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <h1 className="text-lg font-semibold mr-2">수집콘텐츠</h1>
+        <Button onClick={handleCollect} disabled={collecting} size="sm">
           {collecting ? '수집 중...' : '수집 실행'}
-        </button>
-        <button
-          onClick={handleClassifyAll}
-          disabled={classifying}
-          className="border rounded px-3 py-1.5 text-xs disabled:opacity-50"
-        >
+        </Button>
+        <Button onClick={handleClassifyAll} disabled={classifying} variant="outline" size="sm">
           {classifying ? '분류 중...' : '미분류 자동 분류'}
-        </button>
+        </Button>
         {msg && <span className="text-xs text-muted-foreground">{msg}</span>}
         <div className="ml-auto flex items-center gap-2">
           <select
             onChange={e => updateFilter('source', e.target.value)}
             defaultValue={searchParams.get('source') ?? ''}
-            className="border rounded px-2 py-1 text-xs"
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="">전체 출처</option>
             <option value="instagram">인스타그램</option>
@@ -110,7 +105,7 @@ export function CollectedList({
           <select
             onChange={e => updateFilter('type', e.target.value)}
             defaultValue={searchParams.get('type') ?? ''}
-            className="border rounded px-2 py-1 text-xs"
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="">전체 유형</option>
             {contentTypes.map(t => (
@@ -120,7 +115,7 @@ export function CollectedList({
           <select
             onChange={e => updateFilter('sort', e.target.value)}
             defaultValue={searchParams.get('sort') ?? ''}
-            className="border rounded px-2 py-1 text-xs"
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="">반응 수</option>
             <option value="collected">수집일</option>
@@ -129,36 +124,42 @@ export function CollectedList({
         </div>
       </div>
 
+      {/* 콘텐츠 목록 */}
       <div className="space-y-2">
         {contents.map(content => (
-          <div key={content.id} className="border rounded-lg p-4 flex gap-4">
+          <div
+            key={content.id}
+            className="flex gap-4 rounded-xl border bg-card p-4 ring-1 ring-foreground/5"
+          >
             {content.thumbnail_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={content.thumbnail_url}
                 alt=""
-                className="w-16 h-16 object-cover rounded flex-shrink-0"
+                className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
               />
             )}
-            <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex-1 min-w-0 space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{content.source_type}</span>
-                <span className="text-xs text-muted-foreground">{content.source_name}</span>
+                <Badge variant="secondary">
+                  {content.source_type === 'instagram' ? 'Instagram' : 'RSS'}
+                </Badge>
+                <span className="text-xs text-muted-foreground font-medium">{content.source_name}</span>
                 {content.like_count > 0 && (
                   <span className="text-xs text-muted-foreground">♥ {content.like_count.toLocaleString()}</span>
                 )}
               </div>
-              <p className="text-sm font-medium line-clamp-1">
-                {content.title ?? content.caption?.slice(0, 60)}
+              <p className="text-sm font-medium leading-snug line-clamp-1">
+                {content.title ?? content.caption?.slice(0, 80)}
               </p>
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                {content.caption?.slice(0, 120)}
+              <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                {content.caption?.slice(0, 140)}
               </p>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
                 <select
                   defaultValue={content.content_type_id ?? ''}
                   onChange={e => handleTypeChange(content.id, e.target.value)}
-                  className="border rounded px-2 py-0.5 text-xs"
+                  className="h-7 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="">유형 미분류</option>
                   {contentTypes.map(t => (
@@ -169,25 +170,28 @@ export function CollectedList({
                   href={content.original_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-muted-foreground hover:underline"
+                  className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                 >
-                  원본
+                  원본 →
                 </a>
-                <button
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={() => handleGenerate(content.id)}
                   disabled={generating === content.id}
-                  className="ml-auto bg-foreground text-background rounded px-3 py-1 text-xs disabled:opacity-50"
+                  className="ml-auto h-7 text-xs"
                 >
-                  {generating === content.id ? '생성 중...' : '콘텐츠로 생성하기'}
-                </button>
+                  {generating === content.id ? '생성 중...' : '카드뉴스 생성'}
+                </Button>
               </div>
             </div>
           </div>
         ))}
         {contents.length === 0 && (
-          <p className="text-sm text-muted-foreground py-12 text-center">
-            수집된 콘텐츠가 없습니다. 수집 실행 버튼을 눌러주세요.
-          </p>
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <p className="text-sm font-medium text-muted-foreground">수집된 콘텐츠가 없습니다</p>
+            <p className="text-xs text-muted-foreground mt-1">수집 실행 버튼을 눌러 콘텐츠를 가져오세요</p>
+          </div>
         )}
       </div>
     </div>

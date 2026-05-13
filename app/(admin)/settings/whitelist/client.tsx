@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import type { InstagramWhitelistItem } from '@/types'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 
 type Tab = 'ko' | 'en'
 
@@ -45,16 +48,16 @@ export function WhitelistClient({ initialItems }: { initialItems: InstagramWhite
 
   return (
     <div className="max-w-2xl space-y-4">
-      <h2 className="text-sm font-semibold">인스타그램 화이트리스트</h2>
-
       {/* 탭 */}
-      <div className="flex gap-1 border-b">
+      <div className="flex gap-0 border-b">
         {(['ko', 'en'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-3 py-2 text-sm border-b-2 -mb-px ${
-              tab === t ? 'border-foreground font-medium' : 'border-transparent text-muted-foreground hover:text-foreground'
+            className={`px-4 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
+              tab === t
+                ? 'border-foreground font-medium text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t === 'ko' ? '국내' : '해외'} ({items.filter(i => (i.region ?? 'en') === t).length})
@@ -64,64 +67,50 @@ export function WhitelistClient({ initialItems }: { initialItems: InstagramWhite
 
       {/* 추가 폼 */}
       <div className="flex gap-2 flex-wrap">
-        <input placeholder="@handle" value={newHandle}
-          onChange={e => setNewHandle(e.target.value)}
-          className="border rounded px-3 py-1 text-sm w-36" />
-        <input placeholder="메모 (선택)" value={newDesc}
-          onChange={e => setNewDesc(e.target.value)}
-          className="border rounded px-3 py-1 text-sm flex-1 min-w-32" />
-        <select value={newRegion} onChange={e => setNewRegion(e.target.value as Tab)}
-          className="border rounded px-2 py-1 text-sm">
+        <Input placeholder="@handle" value={newHandle} onChange={e => setNewHandle(e.target.value)} className="w-36" />
+        <Input placeholder="메모 (선택)" value={newDesc} onChange={e => setNewDesc(e.target.value)} className="flex-1 min-w-32" />
+        <select
+          value={newRegion}
+          onChange={e => setNewRegion(e.target.value as Tab)}
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        >
           <option value="ko">국내</option>
           <option value="en">해외</option>
         </select>
-        <button onClick={handleAdd}
-          className="bg-foreground text-background rounded px-3 py-1 text-sm">추가</button>
+        <Button onClick={handleAdd}>추가</Button>
       </div>
 
-      {/* 리스트 */}
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b text-left text-muted-foreground text-xs">
-            <th className="py-2 pr-4">핸들</th>
-            <th className="py-2 pr-4">메모</th>
-            <th className="py-2 pr-4">활성</th>
-            <th className="py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map(item => (
-            <tr key={item.id} className="border-b">
-              <td className="py-2 pr-4 font-mono text-xs">
-                <a
-                  href={`https://instagram.com/${item.handle.replace('@', '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  {item.handle}
-                </a>
-              </td>
-              <td className="py-2 pr-4 text-muted-foreground text-xs">{item.description}</td>
-              <td className="py-2 pr-4">
-                <input type="checkbox" checked={item.is_active}
-                  onChange={e => handleToggle(item.id, e.target.checked)} />
-              </td>
-              <td className="py-2">
-                <button onClick={() => handleDelete(item.id)}
-                  className="text-xs text-red-500">삭제</button>
-              </td>
-            </tr>
-          ))}
-          {filtered.length === 0 && (
-            <tr>
-              <td colSpan={4} className="py-4 text-center text-xs text-muted-foreground">
-                {tab === 'ko' ? '국내' : '해외'} 계정이 없습니다
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {/* 계정 목록 */}
+      <div className="space-y-1">
+        {filtered.map(item => (
+          <div key={item.id} className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 ring-1 ring-foreground/5">
+            <a
+              href={`https://instagram.com/${item.handle.replace('@', '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-sm hover:underline min-w-32"
+            >
+              {item.handle}
+            </a>
+            <span className="text-xs text-muted-foreground flex-1 truncate">{item.description}</span>
+            <Badge
+              variant={item.is_active ? 'secondary' : 'outline'}
+              className="cursor-pointer shrink-0"
+              onClick={() => handleToggle(item.id, !item.is_active)}
+            >
+              {item.is_active ? '활성' : '비활성'}
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} className="text-destructive hover:text-destructive h-7 px-2 shrink-0">
+              삭제
+            </Button>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <p className="py-8 text-center text-xs text-muted-foreground">
+            {tab === 'ko' ? '국내' : '해외'} 계정이 없습니다
+          </p>
+        )}
+      </div>
     </div>
   )
 }

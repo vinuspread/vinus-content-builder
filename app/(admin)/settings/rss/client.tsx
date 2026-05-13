@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import type { RssSource } from '@/types'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 
 const RSS_GROUPS = ['디자인 실무 팁', '웹사이트 / UX / 모션', 'AI 디자인 / AI 영상', '브랜드 / 마케팅 / 스타트업', '디자인 의뢰 / 제작 가이드']
 
@@ -45,18 +48,18 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
 
   return (
     <div className="max-w-3xl space-y-4">
-      <h2 className="text-sm font-semibold">RSS 소스 관리</h2>
-
-      {/* 탭 */}
-      <div className="flex gap-1 border-b overflow-x-auto">
+      {/* 카테고리 탭 */}
+      <div className="flex gap-0 border-b overflow-x-auto">
         {RSS_GROUPS.map(g => {
           const count = sources.filter(s => s.group_name === g).length
           return (
             <button
               key={g}
               onClick={() => setTab(g)}
-              className={`px-3 py-2 text-sm border-b-2 -mb-px whitespace-nowrap ${
-                tab === g ? 'border-foreground font-medium' : 'border-transparent text-muted-foreground hover:text-foreground'
+              className={`px-4 py-2.5 text-sm border-b-2 -mb-px whitespace-nowrap transition-colors ${
+                tab === g
+                  ? 'border-foreground font-medium text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               {g} ({count})
@@ -67,63 +70,49 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
 
       {/* 추가 폼 */}
       <div className="flex gap-2 flex-wrap">
-        <input placeholder="RSS 이름" value={newName}
-          onChange={e => setNewName(e.target.value)}
-          className="border rounded px-3 py-1 text-sm w-36" />
-        <input placeholder="RSS URL" value={newUrl}
-          onChange={e => setNewUrl(e.target.value)}
-          className="border rounded px-3 py-1 text-sm flex-1 min-w-48" />
-        <select value={newGroup} onChange={e => setNewGroup(e.target.value)}
-          className="border rounded px-2 py-1 text-sm">
+        <Input placeholder="RSS 이름" value={newName} onChange={e => setNewName(e.target.value)} className="w-36" />
+        <Input placeholder="RSS URL" value={newUrl} onChange={e => setNewUrl(e.target.value)} className="flex-1 min-w-48" />
+        <select
+          value={newGroup}
+          onChange={e => setNewGroup(e.target.value)}
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        >
           {RSS_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
-        <button onClick={handleAdd}
-          className="bg-foreground text-background rounded px-3 py-1 text-sm">추가</button>
+        <Button onClick={handleAdd}>추가</Button>
       </div>
 
-      {/* 리스트 */}
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b text-left text-muted-foreground text-xs">
-            <th className="py-2 pr-3">이름</th>
-            <th className="py-2 pr-3">URL</th>
-            <th className="py-2 pr-3">활성</th>
-            <th className="py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map(source => (
-            <tr key={source.id} className="border-b">
-              <td className="py-2 pr-3 text-xs whitespace-nowrap">{source.name}</td>
-              <td className="py-2 pr-3 text-xs font-mono truncate max-w-64">
-                <a
-                  href={source.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  {source.url}
-                </a>
-              </td>
-              <td className="py-2 pr-3">
-                <input type="checkbox" checked={source.is_active}
-                  onChange={e => handleToggle(source.id, e.target.checked)} />
-              </td>
-              <td className="py-2">
-                <button onClick={() => handleDelete(source.id)}
-                  className="text-xs text-red-500">삭제</button>
-              </td>
-            </tr>
-          ))}
-          {filtered.length === 0 && (
-            <tr>
-              <td colSpan={4} className="py-4 text-center text-xs text-muted-foreground">
-                이 카테고리에 RSS 소스가 없습니다
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {/* RSS 소스 목록 */}
+      <div className="space-y-1">
+        {filtered.map(source => (
+          <div key={source.id} className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 ring-1 ring-foreground/5">
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <p className="text-sm font-medium">{source.name}</p>
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-xs text-muted-foreground hover:text-foreground hover:underline truncate block"
+              >
+                {source.url}
+              </a>
+            </div>
+            <Badge
+              variant={source.is_active ? 'secondary' : 'outline'}
+              className="cursor-pointer shrink-0"
+              onClick={() => handleToggle(source.id, !source.is_active)}
+            >
+              {source.is_active ? '활성' : '비활성'}
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={() => handleDelete(source.id)} className="text-destructive hover:text-destructive h-7 px-2 shrink-0">
+              삭제
+            </Button>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <p className="py-8 text-center text-xs text-muted-foreground">이 카테고리에 RSS 소스가 없습니다</p>
+        )}
+      </div>
     </div>
   )
 }

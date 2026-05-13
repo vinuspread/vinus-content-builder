@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
 
 const tabs = [
   { href: '/settings/content-types', label: '콘텐츠 유형' },
@@ -15,24 +16,28 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const pathname = usePathname()
   return (
     <div className="space-y-6">
-      <nav className="flex gap-1 border-b pb-0">
-        {tabs.map(tab => {
-          const active = pathname === tab.href
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`px-3 py-2 text-sm border-b-2 -mb-px ${
-                active
-                  ? 'border-foreground font-medium'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {tab.label}
-            </Link>
-          )
-        })}
-      </nav>
+      <div>
+        <h1 className="text-lg font-semibold mb-4">설정</h1>
+        <nav className="flex gap-0 border-b">
+          {tabs.map(tab => {
+            const active = pathname === tab.href
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={cn(
+                  'px-4 py-2.5 text-sm border-b-2 -mb-px transition-colors',
+                  active
+                    ? 'border-foreground font-medium text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                )}
+              >
+                {tab.label}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
       <div>{children}</div>
     </div>
   )

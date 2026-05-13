@@ -3,6 +3,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { GeneratedContent } from '@/types'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
 
 export function GeneratedDetailClient({ content: initial }: { content: GeneratedContent }) {
   const [content, setContent] = useState(initial)
@@ -54,100 +60,120 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div className="flex items-center gap-3">
-        <h1 className="text-sm font-semibold flex-1">{content.content_title}</h1>
-        <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
-          {(content.content_type as { name: string } | null)?.name ?? '미분류'}
-        </span>
-        {sourceContent?.original_url && (
-          <a
-            href={sourceContent.original_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-muted-foreground hover:underline"
-          >
-            원본 링크
-          </a>
-        )}
+      {/* 제목 + 메타 */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="secondary">
+            {(content.content_type as { name: string } | null)?.name ?? '미분류'}
+          </Badge>
+          {content.is_published && (
+            <Badge variant="outline" className="text-green-700 border-green-200 bg-green-50">
+              업로드 완료
+            </Badge>
+          )}
+          {sourceContent?.original_url && (
+            <a
+              href={sourceContent.original_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              원본 링크 →
+            </a>
+          )}
+        </div>
+        <h1 className="text-xl font-semibold leading-snug">{content.content_title}</h1>
+        <p className="text-sm text-muted-foreground">{content.core_message}</p>
       </div>
 
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">핵심 메시지</p>
-        <p className="text-sm">{content.core_message}</p>
-      </div>
-
+      {/* 카드뉴스 슬라이드 */}
       <div className="space-y-3">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          카드뉴스 ({content.carousel_content.length}장)
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          카드뉴스 · {content.carousel_content.length}장
         </p>
         {content.carousel_content.map(card => (
-          <div key={card.number} className="border rounded-lg p-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs bg-muted px-1.5 py-0.5 rounded font-medium">
-                {card.number}. {card.role}
-              </span>
-            </div>
-            <p className="text-sm font-medium">{card.headline}</p>
-            <p className="text-sm text-muted-foreground whitespace-pre-line">{card.body}</p>
-          </div>
+          <Card key={card.number} size="sm">
+            <CardHeader className="pb-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {card.number}
+                </span>
+                <Badge variant="outline" className="text-xs">{card.role}</Badge>
+              </div>
+              <CardTitle className="text-sm font-semibold leading-snug">{card.headline}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{card.body}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">인스타그램 본문</p>
-        <p className="text-sm whitespace-pre-line">{content.instagram_caption}</p>
+      {/* 인스타그램 본문 */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">인스타그램 본문</p>
+        <div className="rounded-xl border bg-muted/30 p-4">
+          <p className="text-sm whitespace-pre-line leading-relaxed">{content.instagram_caption}</p>
+        </div>
       </div>
 
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">해시태그</p>
-        <p className="text-sm text-muted-foreground">{content.hashtags.join(' ')}</p>
+      {/* 해시태그 */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">해시태그</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">{content.hashtags.join(' ')}</p>
       </div>
 
       {/* 피드백 재생성 */}
-      <div className="border rounded-lg p-4 space-y-3">
-        <p className="text-xs font-medium">피드백 재생성</p>
-        <textarea
-          value={feedback}
-          onChange={e => setFeedback(e.target.value)}
-          placeholder="수정 의견을 입력하세요. 예: 2~4번 카드 내용이 너무 추상적입니다. 구체적인 사례를 추가해주세요."
-          rows={3}
-          className="w-full border rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-foreground"
-        />
-        <button
-          onClick={handleRegenerate}
-          disabled={regenerating || !feedback.trim()}
-          className="bg-foreground text-background rounded px-4 py-2 text-sm disabled:opacity-50"
-        >
-          {regenerating ? '재생성 중...' : '피드백 반영하여 다시 생성'}
-        </button>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">피드백 재생성</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Textarea
+            value={feedback}
+            onChange={e => setFeedback(e.target.value)}
+            placeholder="수정 의견을 입력하세요. 예: 2~4번 카드 내용이 너무 추상적입니다. 구체적인 사례를 추가해주세요."
+            rows={3}
+          />
+          <Button
+            onClick={handleRegenerate}
+            disabled={regenerating || !feedback.trim()}
+          >
+            {regenerating ? '재생성 중...' : '피드백 반영하여 다시 생성'}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* 업로드 완료 체크 */}
-      <div className="border rounded-lg p-4 space-y-3">
-        <p className="text-xs font-medium">업로드 완료 체크</p>
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={content.is_published}
-            onChange={e => setContent({ ...content, is_published: e.target.checked })}
-          />
-          바이너스 SNS에 업로드 완료
-        </label>
-        <input
-          type="url"
-          placeholder="인스타그램 게시물 URL"
-          value={content.instagram_post_url ?? ''}
-          onChange={e => setContent({ ...content, instagram_post_url: e.target.value })}
-          className="w-full border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
-        />
-        <button
-          onClick={handleSaveUpload}
-          disabled={saving}
-          className="border rounded px-4 py-2 text-sm disabled:opacity-50"
-        >
-          {saving ? '저장 중...' : '저장'}
-        </button>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">업로드 완료 체크</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              className="rounded"
+              checked={content.is_published}
+              onChange={e => setContent({ ...content, is_published: e.target.checked })}
+            />
+            바이너스 SNS에 업로드 완료
+          </label>
+          <div className="space-y-1.5">
+            <Label htmlFor="post-url">인스타그램 게시물 URL</Label>
+            <Input
+              id="post-url"
+              type="url"
+              placeholder="https://www.instagram.com/p/..."
+              value={content.instagram_post_url ?? ''}
+              onChange={e => setContent({ ...content, instagram_post_url: e.target.value })}
+            />
+          </div>
+          <Button variant="outline" onClick={handleSaveUpload} disabled={saving}>
+            {saving ? '저장 중...' : '저장'}
+          </Button>
+        </CardContent>
+      </Card>
 
       {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
     </div>
