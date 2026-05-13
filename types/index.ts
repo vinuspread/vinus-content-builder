@@ -13,6 +13,7 @@ export type InstagramWhitelistItem = {
   id: string
   handle: string
   description: string | null
+  region: 'ko' | 'en'
   is_active: boolean
   created_at: string
 }

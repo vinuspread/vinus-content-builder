@@ -4,9 +4,9 @@ import { supabaseServer } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   if (!(await getSession())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const { handle, description } = await req.json()
+  const { handle, description, region } = await req.json()
   const { data, error } = await supabaseServer
-    .from('instagram_whitelist').insert({ handle, description }).select().single()
+    .from('instagram_whitelist').insert({ handle, description, region: region ?? 'en' }).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ item: data })
 }
