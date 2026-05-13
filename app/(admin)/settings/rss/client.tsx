@@ -72,7 +72,16 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
             <tr key={source.id} className="border-b">
               <td className="py-2 pr-3 text-xs">{source.name}</td>
               <td className="py-2 pr-3 text-xs text-muted-foreground">{source.group_name}</td>
-              <td className="py-2 pr-3 text-xs font-mono truncate max-w-48">{source.url}</td>
+              <td className="py-2 pr-3 text-xs font-mono truncate max-w-48">
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  {source.url}
+                </a>
+              </td>
               <td className="py-2 pr-3">
                 <input type="checkbox" checked={source.is_active}
                   onChange={e => handleToggle(source.id, e.target.checked)} />
