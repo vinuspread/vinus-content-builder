@@ -7,6 +7,7 @@ const RSS_GROUPS = ['디자인 실무 팁', '웹사이트 / UX / 모션', 'AI �
 
 export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
   const [sources, setSources] = useState(initialSources)
+  const [tab, setTab] = useState(RSS_GROUPS[0])
   const [newName, setNewName] = useState('')
   const [newUrl, setNewUrl] = useState('')
   const [newGroup, setNewGroup] = useState(RSS_GROUPS[0])
@@ -40,9 +41,31 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
     setSources(sources.map(s => s.id === id ? { ...s, is_active: isActive } : s))
   }
 
+  const filtered = sources.filter(s => s.group_name === tab)
+
   return (
     <div className="max-w-3xl space-y-4">
       <h2 className="text-sm font-semibold">RSS 소스 관리</h2>
+
+      {/* 탭 */}
+      <div className="flex gap-1 border-b overflow-x-auto">
+        {RSS_GROUPS.map(g => {
+          const count = sources.filter(s => s.group_name === g).length
+          return (
+            <button
+              key={g}
+              onClick={() => setTab(g)}
+              className={`px-3 py-2 text-sm border-b-2 -mb-px whitespace-nowrap ${
+                tab === g ? 'border-foreground font-medium' : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {g} ({count})
+            </button>
+          )
+        })}
+      </div>
+
+      {/* 추가 폼 */}
       <div className="flex gap-2 flex-wrap">
         <input placeholder="RSS 이름" value={newName}
           onChange={e => setNewName(e.target.value)}
@@ -57,22 +80,22 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
         <button onClick={handleAdd}
           className="bg-foreground text-background rounded px-3 py-1 text-sm">추가</button>
       </div>
+
+      {/* 리스트 */}
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b text-left text-muted-foreground text-xs">
             <th className="py-2 pr-3">이름</th>
-            <th className="py-2 pr-3">그룹</th>
             <th className="py-2 pr-3">URL</th>
             <th className="py-2 pr-3">활성</th>
             <th className="py-2"></th>
           </tr>
         </thead>
         <tbody>
-          {sources.map(source => (
+          {filtered.map(source => (
             <tr key={source.id} className="border-b">
-              <td className="py-2 pr-3 text-xs">{source.name}</td>
-              <td className="py-2 pr-3 text-xs text-muted-foreground">{source.group_name}</td>
-              <td className="py-2 pr-3 text-xs font-mono truncate max-w-48">
+              <td className="py-2 pr-3 text-xs whitespace-nowrap">{source.name}</td>
+              <td className="py-2 pr-3 text-xs font-mono truncate max-w-64">
                 <a
                   href={source.url}
                   target="_blank"
@@ -92,6 +115,13 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
               </td>
             </tr>
           ))}
+          {filtered.length === 0 && (
+            <tr>
+              <td colSpan={4} className="py-4 text-center text-xs text-muted-foreground">
+                이 카테고리에 RSS 소스가 없습니다
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
