@@ -71,6 +71,14 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
 
   return (
     <div className="max-w-2xl space-y-6">
+      {/* 목록으로 */}
+      <button
+        onClick={() => router.push('/generated')}
+        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        ← 목록
+      </button>
+
       {/* 제목 + 메타 */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
