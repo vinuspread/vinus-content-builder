@@ -26,7 +26,7 @@ export async function POST() {
   const whitelistHandles = (whitelist ?? []).map(w => w.handle)
   const hashtagList = (hashtags ?? []).map(h => h.hashtag)
 
-  const totalInstagram = 100
+  const totalInstagram = 30
   const whitelistCount = Math.round(totalInstagram * whitelistRatio / 100)
   const hashtagCount = totalInstagram - whitelistCount
 
