@@ -13,14 +13,13 @@ export function WhitelistClient({ initialItems }: { initialItems: InstagramWhite
   const [tab, setTab] = useState<Tab>('ko')
   const [newHandle, setNewHandle] = useState('')
   const [newDesc, setNewDesc] = useState('')
-  const [newRegion, setNewRegion] = useState<Tab>('ko')
 
   async function handleAdd() {
     if (!newHandle.trim()) return
     const res = await fetch('/api/settings/whitelist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ handle: newHandle.trim(), description: newDesc.trim() || null, region: newRegion }),
+      body: JSON.stringify({ handle: newHandle.trim(), description: newDesc.trim() || null, region: tab }),
     })
     if (res.ok) {
       const { item } = await res.json()
@@ -69,14 +68,6 @@ export function WhitelistClient({ initialItems }: { initialItems: InstagramWhite
       <div className="flex gap-2 flex-wrap">
         <Input placeholder="@handle" value={newHandle} onChange={e => setNewHandle(e.target.value)} className="w-36" />
         <Input placeholder="메모 (선택)" value={newDesc} onChange={e => setNewDesc(e.target.value)} className="flex-1 min-w-32" />
-        <select
-          value={newRegion}
-          onChange={e => setNewRegion(e.target.value as Tab)}
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          <option value="ko">국내</option>
-          <option value="en">해외</option>
-        </select>
         <Button onClick={handleAdd}>추가</Button>
       </div>
 
