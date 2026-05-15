@@ -84,10 +84,11 @@ export function CollectedList({
     : null
 
   const collectedLabel = latestCollectedAt
-    ? latestCollectedAt.toLocaleString('ko-KR', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hour12: false,
-      }).replace(/\. /g, '.').replace(/\.$/,'')
+    ? (() => {
+        const p = (n: number) => String(n).padStart(2, '0')
+        const d = latestCollectedAt
+        return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+      })()
     : null
 
   return (
