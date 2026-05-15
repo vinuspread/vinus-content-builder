@@ -99,7 +99,7 @@ export function normalizeInstagramPost(post: ApifyInstagramPost) {
     share_count: 0,
     view_count: post.videoViewCount ?? 0,
     published_at: post.timestamp,
-    keywords: [...post.hashtags, ...post.mentions],
+    keywords: [...(post.hashtags ?? []), ...(post.mentions ?? [])],
     raw_data: post as unknown as Record<string, unknown>,
   }
 }
