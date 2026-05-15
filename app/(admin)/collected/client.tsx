@@ -79,11 +79,27 @@ export function CollectedList({
     router.push(`/collected?${params.toString()}`)
   }
 
+  const latestCollectedAt = contents.length > 0
+    ? new Date(Math.max(...contents.map(c => new Date(c.collected_at).getTime())))
+    : null
+
+  const collectedLabel = latestCollectedAt
+    ? latestCollectedAt.toLocaleString('ko-KR', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      }).replace(/\. /g, '.').replace(/\.$/,'')
+    : null
+
   return (
     <div className="space-y-5">
       {/* 헤더 액션 바 */}
       <div className="flex items-center gap-2 flex-wrap">
-        <h1 className="text-lg font-semibold mr-2">수집콘텐츠</h1>
+        <div className="mr-2">
+          <h1 className="text-lg font-semibold leading-tight">수집콘텐츠</h1>
+          {collectedLabel && (
+            <p className="text-xs text-muted-foreground">{collectedLabel} 수집</p>
+          )}
+        </div>
         <Button onClick={handleCollect} disabled={collecting} size="sm">
           {collecting ? '수집 중...' : '수집 실행'}
         </Button>
