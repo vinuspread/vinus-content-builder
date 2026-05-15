@@ -16,7 +16,29 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
   const [regenerating, setRegenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
+  const [copied, setCopied] = useState(false)
   const router = useRouter()
+
+  function handleCopyAll() {
+    const lines: string[] = []
+    lines.push(`제목: ${content.content_title}`)
+    lines.push(`핵심 메시지: ${content.core_message}`)
+    lines.push('')
+    content.carousel_content.forEach(card => {
+      lines.push(`[${card.number}장 · ${card.role}]`)
+      lines.push(`헤드라인: ${card.headline}`)
+      lines.push(`본문: ${card.body}`)
+      if (card.expertView) lines.push(`전문가 관점: ${card.expertView}`)
+      if (card.practical) lines.push(`실무 적용: ${card.practical}`)
+      if (card.characterMent) lines.push(`캐릭터 멘트: ${card.characterMent}`)
+      lines.push('')
+    })
+    lines.push(`인스타그램 본문: ${content.instagram_caption}`)
+    lines.push(`해시태그: ${content.hashtags.join(' ')}`)
+    navigator.clipboard.writeText(lines.join('\n'))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   async function handleRegenerate() {
     if (!window.confirm(
@@ -72,12 +94,17 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
   return (
     <div className="max-w-2xl space-y-6">
       {/* 목록으로 */}
-      <button
-        onClick={() => router.push('/generated')}
-        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        ← 목록
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => router.push('/generated')}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          ← 목록
+        </button>
+        <Button variant="outline" size="sm" onClick={handleCopyAll} className="text-xs h-7">
+          {copied ? '복사됨 ✓' : '전체 복사'}
+        </Button>
+      </div>
 
       {/* 제목 + 메타 */}
       <div className="space-y-2">
