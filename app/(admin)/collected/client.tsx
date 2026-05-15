@@ -95,7 +95,10 @@ export function CollectedList({
       {/* 헤더 액션 바 */}
       <div className="flex items-center gap-2 flex-wrap">
         <div className="mr-2">
-          <h1 className="text-lg font-semibold leading-tight">수집콘텐츠</h1>
+          <h1 className="text-lg font-semibold leading-tight">
+            수집콘텐츠
+            <span className="ml-2 text-sm font-normal text-muted-foreground">{contents.length}개</span>
+          </h1>
           {collectedLabel && (
             <p className="text-xs text-muted-foreground">{collectedLabel} 수집</p>
           )}
