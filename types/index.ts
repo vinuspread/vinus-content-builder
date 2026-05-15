@@ -73,6 +73,8 @@ export type CarouselCard = {
   body: string
   expertView: string
   practical: string
+  characterMent: string
+  characterVisual: string
 }
 
 export type GeneratedContent = {
@@ -87,8 +89,6 @@ export type GeneratedContent = {
   instagram_caption: string | null
   hashtags: string[]
   original_url: string | null
-  character_ment: string | null
-  character_visual: string | null
   is_published: boolean
   instagram_post_url: string | null
   published_at: string | null
@@ -102,6 +102,4 @@ export type GenerateResult = {
   carousel: CarouselCard[]
   instagramCaption: string
   hashtags: string[]
-  characterMent: string
-  characterVisual: string
 }

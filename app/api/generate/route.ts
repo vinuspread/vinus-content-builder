@@ -62,8 +62,6 @@ export async function POST(req: NextRequest) {
       carousel_content: result.carousel,
       instagram_caption: result.instagramCaption,
       hashtags: result.hashtags,
-      character_ment: result.characterMent ?? null,
-      character_visual: result.characterVisual ?? null,
       original_url: source.original_url,
     })
     .select()

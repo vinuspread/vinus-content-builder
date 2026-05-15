@@ -28,13 +28,13 @@ export const FEEDBACK_SYSTEM_PROMPT = `당신은 바이너스프레드 SNS 콘�
       "headline": "헤드라인",
       "body": "본문",
       "expertView": "전문가 관점",
-      "practical": "실무 적용 포인트"
+      "practical": "실무 적용 포인트",
+      "characterMent": "이 장표 캐릭터 멘트",
+      "characterVisual": "이 장표 캐릭터 비주얼 지시"
     }
   ],
   "instagramCaption": "인스타그램 본문",
-  "hashtags": ["#해시태그"],
-  "characterMent": "캐릭터 멘트",
-  "characterVisual": "캐릭터 비주얼 지시"
+  "hashtags": ["#해시태그"]
 }
 \`\`\`
 
@@ -44,7 +44,7 @@ export function buildFeedbackUserPrompt(
   existingContent: {
     contentTitle: string | null;
     coreMessage: string | null;
-    carousel: Array<{ number: number; role: string; headline: string; body: string; expertView: string; practical: string }>;
+    carousel: Array<{ number: number; role: string; headline: string; body: string; expertView: string; practical: string; characterMent: string; characterVisual: string }>;
     instagramCaption: string | null;
     hashtags: string[];
   },
