@@ -32,7 +32,9 @@ export const FEEDBACK_SYSTEM_PROMPT = `당신은 바이너스프레드 SNS 콘�
     }
   ],
   "instagramCaption": "인스타그램 본문",
-  "hashtags": ["#해시태그"]
+  "hashtags": ["#해시태그"],
+  "characterMent": "캐릭터 멘트",
+  "characterVisual": "캐릭터 비주얼 지시"
 }
 \`\`\`
 
