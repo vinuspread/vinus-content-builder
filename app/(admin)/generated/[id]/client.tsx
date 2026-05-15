@@ -39,6 +39,17 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
     setRegenerating(false)
   }
 
+  async function handleDelete() {
+    if (!window.confirm('이 제작콘텐츠를 삭제하시겠습니까?')) return
+    const res = await fetch(`/api/generated/${content.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      router.push('/generated')
+      router.refresh()
+    } else {
+      setMsg('삭제 실패')
+    }
+  }
+
   async function handleSaveUpload() {
     setSaving(true)
     const res = await fetch(`/api/generated/${content.id}`, {
@@ -82,7 +93,17 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
             </a>
           )}
         </div>
-        <h1 className="text-xl font-semibold leading-snug">{content.content_title}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-xl font-semibold leading-snug">{content.content_title}</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className="text-destructive hover:text-destructive shrink-0 h-7 px-2"
+          >
+            삭제
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">{content.core_message}</p>
       </div>
 
