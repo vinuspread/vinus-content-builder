@@ -11,7 +11,7 @@ export default async function GeneratedPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-lg font-semibold">제작콘텐츠</h1>
+      <h1 className="text-lg font-semibold">카드뉴스목록</h1>
       <div className="space-y-2">
         {(contents ?? []).map(content => (
           <Link
