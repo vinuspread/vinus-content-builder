@@ -4,6 +4,9 @@ export async function tavilySearch(query: string): Promise<string> {
   const token = process.env.TAVILY_API_KEY
   if (!token) return ''
 
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+
   try {
     const res = await fetch('https://api.tavily.com/search', {
       method: 'POST',
@@ -12,9 +15,10 @@ export async function tavilySearch(query: string): Promise<string> {
         api_key: token,
         query,
         search_depth: 'basic',
-        max_results: 5,
+        max_results: 3,
         include_answer: true,
       }),
+      signal: controller.signal,
     })
 
     if (!res.ok) return ''
@@ -29,5 +33,7 @@ export async function tavilySearch(query: string): Promise<string> {
     return parts.join('\n')
   } catch {
     return ''
+  } finally {
+    clearTimeout(timeout)
   }
 }

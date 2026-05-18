@@ -7,7 +7,7 @@ import { buildManualGenerationUserPrompt } from '@/lib/prompts/manual-generation
 import { tavilySearch } from '@/lib/tavily'
 import type { GenerateResult } from '@/types'
 
-export const maxDuration = 60
+export const maxDuration = 120
 
 export async function POST(req: NextRequest) {
   if (!(await getSession())) {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   const msg = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 8192,
+    max_tokens: 5000,
     system: GENERATION_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   })
