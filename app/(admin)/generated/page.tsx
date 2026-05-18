@@ -1,6 +1,8 @@
 import { supabaseServer } from '@/lib/supabase/server'
 import { GeneratedPageClient } from './client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function GeneratedPage() {
   const { data: contents } = await supabaseServer
     .from('generated_contents')
