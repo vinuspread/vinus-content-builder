@@ -112,6 +112,11 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
           <Badge variant="secondary">
             {(content.content_type as { name: string } | null)?.name ?? '미분류'}
           </Badge>
+          {content.source_content_id === null && (
+            <Badge variant="outline" className="text-blue-700 border-blue-200 bg-blue-50">
+              자체콘텐츠
+            </Badge>
+          )}
           {content.is_published && (
             <Badge variant="outline" className="text-green-700 border-green-200 bg-green-50">
               업로드 완료
