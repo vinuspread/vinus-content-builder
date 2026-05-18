@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
+import { supabaseServer } from '@/lib/supabase/server'
+import { anthropic } from '@/lib/anthropic'
+import { GENERATION_SYSTEM_PROMPT } from '@/lib/prompts/generation'
+import { buildManualGenerationUserPrompt } from '@/lib/prompts/manual-generation'
+import { tavilySearch } from '@/lib/tavily'
+import type { GenerateResult } from '@/types'
+
+export const maxDuration = 60
+
+export async function POST(req: NextRequest) {
+  if (!(await getSession())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { topic, content = '' } = await req.json()
+  if (!topic?.trim()) {
+    return NextResponse.json({ error: 'topic required' }, { status: 400 })
+  }
+
+  const searchResults = await tavilySearch(topic)
+
+  const userPrompt = buildManualGenerationUserPrompt(topic, content, searchResults)
+
+  const msg = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 8192,
+    system: GENERATION_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: userPrompt }],
+  })
+
+  const raw = (msg.content[0] as { type: string; text: string }).text
+  const jsonMatch = raw.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
+
+  const result: GenerateResult = JSON.parse(jsonMatch[0])
+
+  if (!Array.isArray(result.carousel) || result.carousel.length !== 6) {
+    return NextResponse.json(
+      { error: `Carousel must have exactly 6 cards, got ${result.carousel?.length ?? 0}` },
+      { status: 500 }
+    )
+  }
+
+  const { data: generated, error } = await supabaseServer
+    .from('generated_contents')
+    .insert({
+      source_content_id: null,
+      content_type_id: null,
+      content_title: result.contentTitle,
+      core_message: result.coreMessage,
+      carousel_content: result.carousel,
+      instagram_caption: result.instagramCaption,
+      hashtags: result.hashtags,
+      original_url: null,
+    })
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ id: generated.id })
+}
