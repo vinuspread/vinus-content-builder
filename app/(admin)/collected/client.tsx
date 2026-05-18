@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { CollectedContent, ContentType } from '@/types'
 import { Button } from '@/components/ui/button'
@@ -9,9 +9,11 @@ import { Badge } from '@/components/ui/badge'
 export function CollectedList({
   contents,
   contentTypes,
+  generatedContentIds,
 }: {
   contents: CollectedContent[]
   contentTypes: Pick<ContentType, 'id' | 'name'>[]
+  generatedContentIds: string[]
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -19,6 +21,31 @@ export function CollectedList({
   const [classifying, setClassifying] = useState(false)
   const [msg, setMsg] = useState('')
   const [generating, setGenerating] = useState<string | null>(null)
+  const [collectElapsed, setCollectElapsed] = useState(0)
+  const [generateElapsed, setGenerateElapsed] = useState(0)
+  const collectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const generateTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const generatedSet = new Set(generatedContentIds)
+
+  useEffect(() => {
+    if (collecting) {
+      setCollectElapsed(0)
+      collectTimerRef.current = setInterval(() => setCollectElapsed(s => s + 1), 1000)
+    } else {
+      if (collectTimerRef.current) clearInterval(collectTimerRef.current)
+    }
+    return () => { if (collectTimerRef.current) clearInterval(collectTimerRef.current) }
+  }, [collecting])
+
+  useEffect(() => {
+    if (generating) {
+      setGenerateElapsed(0)
+      generateTimerRef.current = setInterval(() => setGenerateElapsed(s => s + 1), 1000)
+    } else {
+      if (generateTimerRef.current) clearInterval(generateTimerRef.current)
+    }
+    return () => { if (generateTimerRef.current) clearInterval(generateTimerRef.current) }
+  }, [generating])
 
   async function handleCollect() {
     setCollecting(true)
@@ -104,9 +131,19 @@ export function CollectedList({
             <p className="text-xs text-muted-foreground">{collectedLabel} 수집</p>
           )}
         </div>
-        <Button onClick={handleCollect} disabled={collecting} size="sm">
-          {collecting ? '수집 중...' : '수집 실행'}
-        </Button>
+        <div className="flex flex-col gap-1">
+          <Button onClick={handleCollect} disabled={collecting} size="sm">
+            {collecting ? `수집 중... ${collectElapsed}초` : '수집 실행'}
+          </Button>
+          {collecting && (
+            <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-foreground transition-all duration-1000"
+                style={{ width: `${Math.min(92, Math.round(92 * (1 - Math.exp(-collectElapsed / 30))))}%` }}
+              />
+            </div>
+          )}
+        </div>
         <Button onClick={handleClassifyAll} disabled={classifying} variant="outline" size="sm">
           {classifying ? '분류 중...' : '미분류 자동 분류'}
         </Button>
@@ -163,6 +200,9 @@ export function CollectedList({
                 <Badge variant="secondary">
                   {content.source_type === 'instagram' ? 'Instagram' : 'RSS'}
                 </Badge>
+                {generatedSet.has(content.id) && (
+                  <Badge variant="outline" className="text-blue-700 border-blue-200 bg-blue-50">생성완료</Badge>
+                )}
                 <span className="text-xs text-muted-foreground font-medium">{content.source_name}</span>
                 {content.like_count > 0 && (
                   <span className="text-xs text-muted-foreground">♥ {content.like_count.toLocaleString()}</span>
@@ -193,15 +233,29 @@ export function CollectedList({
                 >
                   원본 →
                 </a>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleGenerate(content.id)}
-                  disabled={generating === content.id}
-                  className="ml-auto h-7 text-xs"
-                >
-                  {generating === content.id ? '생성 중...' : '카드뉴스 생성'}
-                </Button>
+                <div className="ml-auto flex flex-col items-end gap-1">
+                  <Button
+                    size="sm"
+                    variant={generatedSet.has(content.id) ? 'secondary' : 'outline'}
+                    onClick={() => !generatedSet.has(content.id) && handleGenerate(content.id)}
+                    disabled={generating === content.id || generatedSet.has(content.id)}
+                    className="h-7 text-xs"
+                  >
+                    {generating === content.id
+                      ? `생성 중... ${generateElapsed}초`
+                      : generatedSet.has(content.id)
+                      ? '생성완료'
+                      : '카드뉴스 생성'}
+                  </Button>
+                  {generating === content.id && (
+                    <div className="h-1 w-24 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-foreground transition-all duration-1000"
+                        style={{ width: `${Math.min(92, Math.round(92 * (1 - Math.exp(-generateElapsed / 25))))}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

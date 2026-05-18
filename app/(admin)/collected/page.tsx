@@ -19,14 +19,13 @@ export default async function CollectedPage({
     .select('source_content_id')
     .not('source_content_id', 'is', null)
 
-  const excludeIds = (generatedIds ?? []).map(r => r.source_content_id as string)
+  const generatedContentIds = (generatedIds ?? []).map(r => r.source_content_id as string)
 
   let query = supabaseServer
     .from('collected_contents')
     .select('*, content_type:content_types(id, name)')
     .limit(100)
 
-  if (excludeIds.length > 0) query = query.not('id', 'in', `(${excludeIds.join(',')})`)
   if (params.source) query = query.eq('source_type', params.source)
   if (params.type) query = query.eq('content_type_id', params.type)
 
@@ -41,6 +40,7 @@ export default async function CollectedPage({
     <CollectedList
       contents={contents ?? []}
       contentTypes={contentTypes ?? []}
+      generatedContentIds={generatedContentIds}
     />
   )
 }
