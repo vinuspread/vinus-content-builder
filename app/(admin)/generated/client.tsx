@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,19 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
   const [topic, setTopic] = useState('')
   const [detail, setDetail] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
   const [toast, setToast] = useState('')
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (generating) {
+      setElapsed(0)
+      timerRef.current = setInterval(() => setElapsed(s => s + 1), 1000)
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [generating])
 
   async function handleGenerate() {
     if (!topic.trim()) return
@@ -93,8 +105,21 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
             />
           </div>
           <Button onClick={handleGenerate} disabled={generating || !topic.trim()}>
-            {generating ? '생성 중... (약 30초 소요)' : '카드뉴스 생성'}
+            {generating ? `생성 중... ${elapsed}초` : '카드뉴스 생성'}
           </Button>
+          {generating && (
+            <div className="space-y-1.5">
+              <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-foreground transition-all duration-1000"
+                  style={{ width: `${Math.min(92, Math.round(92 * (1 - Math.exp(-elapsed / 28))))}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {elapsed < 5 ? '웹 검색 중...' : elapsed < 15 ? '원고 작성 중...' : '원고 완성 중... 거의 다 됐어요'}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
