@@ -54,6 +54,8 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  console.log('[manual] inserting to generated_contents, carousel length:', result.carousel.length)
+
   const { data: generated, error } = await supabaseServer
     .from('generated_contents')
     .insert({
@@ -69,6 +71,14 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[manual] insert error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  if (!generated) {
+    console.error('[manual] insert returned no data')
+    return NextResponse.json({ error: 'Insert returned no data' }, { status: 500 })
+  }
+  console.log('[manual] inserted id:', generated.id)
   return NextResponse.json({ id: generated.id })
 }
