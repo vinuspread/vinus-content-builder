@@ -36,8 +36,11 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
     lines.push(`인스타그램 본문: ${content.instagram_caption}`)
     lines.push(`해시태그: ${content.hashtags.join(' ')}`)
     navigator.clipboard.writeText(lines.join('\n'))
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch(() => setMsg('클립보드 복사에 실패했습니다.'))
   }
 
   async function handleRegenerate() {

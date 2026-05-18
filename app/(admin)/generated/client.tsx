@@ -29,24 +29,30 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
   async function handleGenerate() {
     if (!topic.trim()) return
     setGenerating(true)
-    const res = await fetch('/api/generate/manual', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic: topic.trim(), content: detail.trim() }),
-    })
-    if (res.ok) {
-      setToast('카드뉴스가 생성됐습니다.')
-      setOpen(false)
-      setTopic('')
-      setDetail('')
-      router.refresh()
-      setTimeout(() => setToast(''), 3000)
-    } else {
-      const data = await res.json()
-      setToast(`생성 실패: ${data.error ?? '알 수 없는 오류'}`)
+    try {
+      const res = await fetch('/api/generate/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: topic.trim(), content: detail.trim() }),
+      })
+      if (res.ok) {
+        setToast('카드뉴스가 생성됐습니다.')
+        setOpen(false)
+        setTopic('')
+        setDetail('')
+        router.refresh()
+        setTimeout(() => setToast(''), 3000)
+      } else {
+        const data = await res.json()
+        setToast(`생성 실패: ${data.error ?? '알 수 없는 오류'}`)
+        setTimeout(() => setToast(''), 4000)
+      }
+    } catch {
+      setToast('네트워크 오류가 발생했습니다.')
       setTimeout(() => setToast(''), 4000)
+    } finally {
+      setGenerating(false)
     }
-    setGenerating(false)
   }
 
   return (

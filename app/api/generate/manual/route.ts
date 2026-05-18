@@ -14,7 +14,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { topic, content = '' } = await req.json()
+  let body: { topic?: string; content?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+  const { topic, content = '' } = body
   if (!topic?.trim()) {
     return NextResponse.json({ error: 'topic required' }, { status: 400 })
   }
@@ -34,7 +40,12 @@ export async function POST(req: NextRequest) {
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (!jsonMatch) return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
 
-  const result: GenerateResult = JSON.parse(jsonMatch[0])
+  let result: GenerateResult
+  try {
+    result = JSON.parse(jsonMatch[0])
+  } catch {
+    return NextResponse.json({ error: 'Failed to parse Claude response' }, { status: 500 })
+  }
 
   if (!Array.isArray(result.carousel) || result.carousel.length !== 6) {
     return NextResponse.json(
