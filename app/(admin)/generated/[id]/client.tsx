@@ -29,8 +29,8 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
 
   function handleCopyAll() {
     const lines: string[] = []
-    lines.push(`제목: ${content.content_title}`)
-    lines.push(`핵심 메시지: ${content.core_message}`)
+    lines.push(`제목: ${content.content_title ?? ''}`)
+    lines.push(`핵심 메시지: ${content.core_message ?? ''}`)
     lines.push('')
     content.carousel_content.forEach(card => {
       lines.push(`[${card.number}장 · ${card.role}]`)
@@ -41,7 +41,7 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
       if (card.characterMent) lines.push(`캐릭터 멘트: ${card.characterMent}`)
       lines.push('')
     })
-    lines.push(`인스타그램 본문: ${content.instagram_caption}`)
+    lines.push(`인스타그램 본문: ${content.instagram_caption ?? ''}`)
     lines.push(`해시태그: ${content.hashtags.join(' ')}`)
     navigator.clipboard.writeText(lines.join('\n'))
       .then(() => {
@@ -88,19 +88,24 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
 
   async function handleSaveUpload() {
     setSaving(true)
-    const res = await fetch(`/api/generated/${content.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        is_published: content.is_published,
-        instagram_post_url: content.instagram_post_url,
-        published_at: content.is_published && !content.published_at
-          ? new Date().toISOString()
-          : content.published_at,
-      }),
-    })
-    setMsg(res.ok ? '저장됐습니다.' : '저장 실패')
-    setSaving(false)
+    try {
+      const res = await fetch(`/api/generated/${content.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          is_published: content.is_published,
+          instagram_post_url: content.instagram_post_url,
+          published_at: content.is_published && !content.published_at
+            ? new Date().toISOString()
+            : content.published_at,
+        }),
+      })
+      setMsg(res.ok ? '저장됐습니다.' : '저장 실패')
+    } catch {
+      setMsg('저장 실패')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const sourceContent = content.source_content as { title?: string; original_url?: string } | null
