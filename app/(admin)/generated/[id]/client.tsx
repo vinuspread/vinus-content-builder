@@ -70,6 +70,8 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
       } else {
         setMsg('재생성 실패')
       }
+    } catch {
+      setMsg('재생성 실패')
     } finally {
       setRegenerating(false)
     }
@@ -77,11 +79,15 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
 
   async function handleDelete() {
     if (!window.confirm('이 카드뉴스를 삭제하시겠습니까?')) return
-    const res = await fetch(`/api/generated/${content.id}`, { method: 'DELETE' })
-    if (res.ok) {
-      router.push('/generated')
-      router.refresh()
-    } else {
+    try {
+      const res = await fetch(`/api/generated/${content.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        router.push('/generated')
+        router.refresh()
+      } else {
+        setMsg('삭제 실패')
+      }
+    } catch {
       setMsg('삭제 실패')
     }
   }
