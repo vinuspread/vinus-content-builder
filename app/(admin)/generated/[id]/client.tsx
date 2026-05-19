@@ -4,11 +4,10 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { GeneratedContent } from '@/types'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
 export function GeneratedDetailClient({ content: initial }: { content: GeneratedContent }) {
   const [content, setContent] = useState(initial)
@@ -17,7 +16,17 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [copied, setCopied] = useState(false)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const router = useRouter()
+
+  function toggleExpanded(key: string) {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   function handleCopyAll() {
     const lines: string[] = []
@@ -49,23 +58,26 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
     )) return
     setRegenerating(true)
     setMsg('')
-    const res = await fetch('/api/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ generatedContentId: content.id, feedback }),
-    })
-    if (res.ok) {
-      setMsg('재생성됐습니다.')
-      setFeedback('')
-      router.refresh()
-    } else {
-      setMsg('재생성 실패')
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generatedContentId: content.id, feedback }),
+      })
+      if (res.ok) {
+        setMsg('재생성됐습니다.')
+        setFeedback('')
+        router.refresh()
+      } else {
+        setMsg('재생성 실패')
+      }
+    } finally {
+      setRegenerating(false)
     }
-    setRegenerating(false)
   }
 
   async function handleDelete() {
-    if (!window.confirm('이 제작콘텐츠를 삭제하시겠습니까?')) return
+    if (!window.confirm('이 카드뉴스를 삭제하시겠습니까?')) return
     const res = await fetch(`/api/generated/${content.id}`, { method: 'DELETE' })
     if (res.ok) {
       router.push('/generated')
@@ -93,10 +105,11 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
   }
 
   const sourceContent = content.source_content as { title?: string; original_url?: string } | null
+  const isSelf = content.source_content_id === null
 
   return (
-    <div className="max-w-2xl space-y-6">
-      {/* 목록으로 */}
+    <div className="space-y-4">
+      {/* 상단 바 */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.push('/generated')}
@@ -104,170 +117,185 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
         >
           ← 목록
         </button>
-        <Button variant="outline" size="sm" onClick={handleCopyAll} className="text-xs h-7">
-          {copied ? '복사됨 ✓' : '전체 복사'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleCopyAll} className="text-xs h-7">
+            {copied ? '복사됨 ✓' : '전체 복사'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className="text-destructive hover:text-destructive h-7 px-2 text-xs"
+          >
+            삭제
+          </Button>
+        </div>
       </div>
 
-      {/* 제목 + 메타 */}
-      <div className="space-y-2">
+      {/* 제목 + 배지 */}
+      <div className="space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="secondary">
+          <span className="text-xs text-muted-foreground">
             {(content.content_type as { name: string } | null)?.name ?? '미분류'}
-          </Badge>
-          {content.source_content_id === null && (
-            <Badge variant="outline" className="text-blue-700 border-blue-200 bg-blue-50">
-              자체콘텐츠
-            </Badge>
-          )}
-          {content.is_published && (
-            <Badge variant="outline" className="text-green-700 border-green-200 bg-green-50">
-              업로드 완료
-            </Badge>
-          )}
+          </span>
+          {isSelf && <span className="text-xs font-medium text-blue-600">자체콘텐츠</span>}
+          {content.is_published && <span className="text-xs text-green-600">✓ 업로드 완료</span>}
           {sourceContent?.original_url && (
             <a
               href={sourceContent.original_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
+              className="ml-auto text-xs text-muted-foreground hover:text-foreground"
             >
-              원본 링크 →
+              원본 ↗
             </a>
           )}
         </div>
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="text-xl font-semibold leading-snug">{content.content_title}</h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDelete}
-            className="text-destructive hover:text-destructive shrink-0 h-7 px-2"
-          >
-            삭제
-          </Button>
-        </div>
+        <h1 className="text-xl font-semibold leading-snug">{content.content_title}</h1>
         <p className="text-sm text-muted-foreground">{content.core_message}</p>
       </div>
 
-      {/* 카드뉴스 슬라이드 */}
-      <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          카드뉴스 · {content.carousel_content.length}장
-        </p>
-        {content.carousel_content.map(card => (
-          <Card key={card.number} size="sm">
-            <CardHeader className="pb-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-muted-foreground">
-                  {card.number}
-                </span>
-                <Badge variant="outline" className="text-xs">{card.role}</Badge>
-              </div>
-              <CardTitle className="text-sm font-semibold leading-snug">{card.headline}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{card.body}</p>
-              {card.expertView && (
-                <div className="rounded-md bg-muted/40 px-3 py-2 space-y-0.5">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">전문가 관점</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{card.expertView}</p>
+      {/* 2컬럼 본문 */}
+      <div className="flex gap-8 items-start">
+        {/* 왼쪽: 원고 */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* 카드 슬라이드 */}
+          <div className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              카드뉴스 · {content.carousel_content.length}장
+            </p>
+            {content.carousel_content.map(card => (
+              <div key={card.number} className="space-y-2 py-4 border-b border-border/40 last:border-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground">{card.number}</span>
+                  <span className="text-xs text-muted-foreground">· {card.role}</span>
                 </div>
-              )}
-              {card.practical && (
-                <div className="rounded-md bg-muted/40 px-3 py-2 space-y-0.5">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">실무 적용</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{card.practical}</p>
-                </div>
-              )}
-              {(card.characterMent || card.characterVisual) && (
-                <div className="rounded-md border border-dashed px-3 py-2 space-y-2">
-                  {card.characterMent && (
-                    <div className="space-y-0.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">캐릭터 멘트</p>
-                      <p className="text-xs font-medium">&ldquo;{card.characterMent}&rdquo;</p>
-                    </div>
-                  )}
-                  {card.characterVisual && (
-                    <div className="space-y-0.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">비주얼 지시</p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{card.characterVisual}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                <p className="text-sm font-semibold leading-snug">{card.headline}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{card.body}</p>
 
-      {/* 인스타그램 본문 */}
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">인스타그램 본문</p>
-        <div className="rounded-xl border bg-muted/30 p-4">
-          <p className="text-sm whitespace-pre-line leading-relaxed">{content.instagram_caption}</p>
+                {/* 접을 수 있는 보조 정보 */}
+                {card.expertView && (
+                  <div>
+                    <button
+                      onClick={() => toggleExpanded(`${card.number}-expertView`)}
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                    >
+                      <span>{expanded.has(`${card.number}-expertView`) ? '▼' : '▶'}</span>
+                      전문가 관점
+                    </button>
+                    {expanded.has(`${card.number}-expertView`) && (
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed pl-3">{card.expertView}</p>
+                    )}
+                  </div>
+                )}
+                {card.practical && (
+                  <div>
+                    <button
+                      onClick={() => toggleExpanded(`${card.number}-practical`)}
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                    >
+                      <span>{expanded.has(`${card.number}-practical`) ? '▼' : '▶'}</span>
+                      실무 적용
+                    </button>
+                    {expanded.has(`${card.number}-practical`) && (
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed pl-3">{card.practical}</p>
+                    )}
+                  </div>
+                )}
+                {card.characterMent && (
+                  <div>
+                    <button
+                      onClick={() => toggleExpanded(`${card.number}-characterMent`)}
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                    >
+                      <span>{expanded.has(`${card.number}-characterMent`) ? '▼' : '▶'}</span>
+                      캐릭터 멘트
+                    </button>
+                    {expanded.has(`${card.number}-characterMent`) && (
+                      <p className="mt-1 text-xs font-medium pl-3">&ldquo;{card.characterMent}&rdquo;</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* 인스타그램 본문 */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">인스타그램 본문</p>
+            <p className="text-sm whitespace-pre-line leading-relaxed text-muted-foreground">{content.instagram_caption}</p>
+          </div>
+
+          {/* 해시태그 */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">해시태그</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{content.hashtags.join(' ')}</p>
+          </div>
+        </div>
+
+        {/* 오른쪽: 액션 패널 (sticky) */}
+        <div className="w-64 shrink-0 sticky top-20 self-start space-y-6">
+          {/* 콘텐츠 유형 */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">콘텐츠 유형</p>
+            <p className="text-sm text-muted-foreground">
+              {(content.content_type as { name: string } | null)?.name ?? '미분류'}
+            </p>
+          </div>
+
+          <div className="border-t border-border/40" />
+
+          {/* 업로드 완료 */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">업로드</p>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                className="rounded"
+                checked={content.is_published}
+                onChange={e => setContent({ ...content, is_published: e.target.checked })}
+              />
+              SNS 업로드 완료
+            </label>
+            <div className="space-y-1.5">
+              <Label htmlFor="post-url" className="text-xs">인스타그램 URL</Label>
+              <Input
+                id="post-url"
+                type="url"
+                placeholder="https://www.instagram.com/p/..."
+                value={content.instagram_post_url ?? ''}
+                onChange={e => setContent({ ...content, instagram_post_url: e.target.value })}
+              />
+            </div>
+            <Button variant="outline" size="sm" onClick={handleSaveUpload} disabled={saving} className="w-full">
+              {saving ? '저장 중...' : '저장'}
+            </Button>
+          </div>
+
+          <div className="border-t border-border/40" />
+
+          {/* 피드백 재생성 */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">피드백 재생성</p>
+            <Textarea
+              value={feedback}
+              onChange={e => setFeedback(e.target.value)}
+              placeholder="수정 의견을 입력하세요."
+              rows={4}
+            />
+            <Button
+              size="sm"
+              onClick={handleRegenerate}
+              disabled={regenerating || !feedback.trim()}
+              className="w-full"
+            >
+              {regenerating ? '재생성 중...' : '재생성'}
+            </Button>
+          </div>
+
+          {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
         </div>
       </div>
-
-      {/* 해시태그 */}
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">해시태그</p>
-        <p className="text-sm text-muted-foreground leading-relaxed">{content.hashtags.join(' ')}</p>
-      </div>
-
-      {/* 피드백 재생성 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">피드백 재생성</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Textarea
-            value={feedback}
-            onChange={e => setFeedback(e.target.value)}
-            placeholder="수정 의견을 입력하세요. 예: 2~4번 카드 내용이 너무 추상적입니다. 구체적인 사례를 추가해주세요."
-            rows={3}
-          />
-          <Button
-            onClick={handleRegenerate}
-            disabled={regenerating || !feedback.trim()}
-          >
-            {regenerating ? '재생성 중...' : '피드백 반영하여 다시 생성'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* 업로드 완료 체크 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">업로드 완료 체크</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              className="rounded"
-              checked={content.is_published}
-              onChange={e => setContent({ ...content, is_published: e.target.checked })}
-            />
-            바이너스 SNS에 업로드 완료
-          </label>
-          <div className="space-y-1.5">
-            <Label htmlFor="post-url">인스타그램 게시물 URL</Label>
-            <Input
-              id="post-url"
-              type="url"
-              placeholder="https://www.instagram.com/p/..."
-              value={content.instagram_post_url ?? ''}
-              onChange={e => setContent({ ...content, instagram_post_url: e.target.value })}
-            />
-          </div>
-          <Button variant="outline" onClick={handleSaveUpload} disabled={saving}>
-            {saving ? '저장 중...' : '저장'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
     </div>
   )
 }
