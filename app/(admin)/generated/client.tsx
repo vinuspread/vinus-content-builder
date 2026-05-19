@@ -27,6 +27,7 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
   const [elapsed, setElapsed] = useState(0)
   const [toast, setToast] = useState('')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (generating) {
@@ -38,6 +39,10 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [generating])
 
+  useEffect(() => {
+    return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }
+  }, [])
+
   async function handleGenerate() {
     if (!topic.trim()) return
     setGenerating(true)
@@ -48,20 +53,23 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
         body: JSON.stringify({ topic: topic.trim(), content: detail.trim() }),
       })
       if (res.ok) {
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
         setToast('카드뉴스가 생성됐습니다.')
+        toastTimerRef.current = setTimeout(() => setToast(''), 3000)
         setOpen(false)
         setTopic('')
         setDetail('')
         router.refresh()
-        setTimeout(() => setToast(''), 3000)
       } else {
         const data = await res.json()
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
         setToast(`생성 실패: ${data.error ?? '알 수 없는 오류'}`)
-        setTimeout(() => setToast(''), 4000)
+        toastTimerRef.current = setTimeout(() => setToast(''), 4000)
       }
     } catch {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
       setToast('네트워크 오류가 발생했습니다.')
-      setTimeout(() => setToast(''), 4000)
+      toastTimerRef.current = setTimeout(() => setToast(''), 4000)
     } finally {
       setGenerating(false)
     }
@@ -132,7 +140,9 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
           const isPublished = content.is_published
           const p = (n: number) => String(n).padStart(2, '0')
           const d = new Date(content.created_at)
-          const dateLabel = `${p(d.getMonth()+1)}.${p(d.getDate())}`
+          const dateLabel = isNaN(d.getTime())
+            ? '?'
+            : `${p(d.getMonth()+1)}.${p(d.getDate())}`
 
           return (
             <Link
