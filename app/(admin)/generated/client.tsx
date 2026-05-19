@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 type ContentItem = {
   id: string
@@ -68,7 +68,7 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* 토스트 */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-foreground text-background text-sm px-4 py-2.5 shadow-lg">
@@ -86,7 +86,7 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
 
       {/* 직접 입력 폼 */}
       {open && (
-        <div className="rounded-xl border bg-card p-4 ring-1 ring-foreground/5 space-y-3">
+        <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
           <div className="space-y-1.5">
             <label className="text-xs font-medium">주제 *</label>
             <Input
@@ -96,67 +96,72 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium">내용 <span className="text-muted-foreground font-normal">(선택 — 방향이나 핵심 포인트를 적어주세요)</span></label>
+            <label className="text-xs font-medium text-muted-foreground">내용 <span className="font-normal">(선택)</span></label>
             <Textarea
-              placeholder="예: 레드 계열은 식욕을 자극하는 컬러라 음식업종에 맞고, 파란 계열은 신뢰감을 주어 금융·IT에 어울린다. 그런데 많은 스타트업이 트렌디해 보이려고 업종과 맞지 않는 컬러를 쓴다..."
-              rows={4}
+              placeholder="방향이나 핵심 포인트를 입력하면 품질이 올라갑니다."
+              rows={3}
               value={detail}
               onChange={e => setDetail(e.target.value)}
             />
           </div>
-          <Button onClick={handleGenerate} disabled={generating || !topic.trim()}>
-            {generating ? `생성 중... ${elapsed}초` : '카드뉴스 생성'}
-          </Button>
-          {generating && (
-            <div className="space-y-1.5">
-              <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-foreground transition-all duration-1000"
-                  style={{ width: `${Math.min(92, Math.round(92 * (1 - Math.exp(-elapsed / 28))))}%` }}
-                />
+          <div className="space-y-2">
+            <Button onClick={handleGenerate} disabled={generating || !topic.trim()} size="sm">
+              {generating ? `생성 중... ${elapsed}초` : '카드뉴스 생성'}
+            </Button>
+            {generating && (
+              <div className="space-y-1">
+                <div className="h-0.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-foreground transition-all duration-1000"
+                    style={{ width: `${Math.min(92, Math.round(92 * (1 - Math.exp(-elapsed / 28))))}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {elapsed < 5 ? '웹 검색 중...' : elapsed < 15 ? '원고 작성 중...' : '원고 완성 중...'}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {elapsed < 5 ? '웹 검색 중...' : elapsed < 15 ? '원고 작성 중...' : '원고 완성 중... 거의 다 됐어요'}
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
       {/* 목록 */}
-      <div className="space-y-2">
-        {contents.map(content => (
-          <Link
-            key={content.id}
-            href={`/generated/${content.id}`}
-            className="flex items-start gap-4 rounded-xl border bg-card p-4 ring-1 ring-foreground/5 hover:bg-muted/40 transition-colors"
-          >
-            <div className="flex-1 min-w-0 space-y-1.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="secondary">
-                  {content.content_type?.name ?? '미분류'}
-                </Badge>
-                {content.source_content_id === null && (
-                  <Badge variant="outline">자체콘텐츠</Badge>
-                )}
-                {content.is_published && (
-                  <Badge variant="outline" className="text-green-700 border-green-200 bg-green-50">
-                    업로드 완료
-                  </Badge>
-                )}
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {new Date(content.created_at).toLocaleDateString('ko-KR')}
-                </span>
-              </div>
-              <p className="text-sm font-medium leading-snug">{content.content_title ?? '(제목 없음)'}</p>
-              <p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed">{content.core_message}</p>
-            </div>
-          </Link>
-        ))}
+      <div className="divide-y divide-border/40">
+        {contents.map(content => {
+          const isSelf = content.source_content_id === null
+          const isPublished = content.is_published
+          const p = (n: number) => String(n).padStart(2, '0')
+          const d = new Date(content.created_at)
+          const dateLabel = `${p(d.getMonth()+1)}.${p(d.getDate())}`
+
+          return (
+            <Link
+              key={content.id}
+              href={`/generated/${content.id}`}
+              className="flex items-center gap-3 py-2.5 hover:bg-muted/30 -mx-2 px-2 rounded transition-colors"
+            >
+              {isSelf && (
+                <span className="shrink-0 text-[11px] font-medium text-blue-600">자체</span>
+              )}
+              <span className={cn('flex-1 text-sm truncate', isPublished && 'text-muted-foreground')}>
+                {content.content_title ?? '(제목 없음)'}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground w-14 text-right">
+                {content.content_type?.name ?? '미분류'}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground w-10 text-right">
+                {dateLabel}
+              </span>
+              {isPublished && (
+                <span className="shrink-0 text-xs text-muted-foreground">✓</span>
+              )}
+            </Link>
+          )
+        })}
         {contents.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-sm font-medium text-muted-foreground">아직 제작된 콘텐츠가 없습니다</p>
-            <p className="text-xs text-muted-foreground mt-1">수집콘텐츠에서 카드뉴스 생성을 누르거나 직접 입력하세요</p>
+            <p className="text-sm text-muted-foreground">아직 제작된 콘텐츠가 없습니다</p>
+            <p className="text-xs text-muted-foreground mt-1">수집콘텐츠에서 생성하거나 직접 입력하세요</p>
           </div>
         )}
       </div>
