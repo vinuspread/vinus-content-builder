@@ -15,17 +15,7 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [copied, setCopied] = useState(false)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const router = useRouter()
-
-  function toggleExpanded(key: string) {
-    setExpanded(prev => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
 
   function handleCopyAll() {
     const lines: string[] = []
@@ -183,47 +173,22 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
                 <p className="text-sm font-semibold leading-snug">{card.headline}</p>
                 <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{card.body}</p>
 
-                {/* 접을 수 있는 보조 정보 */}
                 {card.expertView && (
-                  <div>
-                    <button
-                      onClick={() => toggleExpanded(`${card.number}-expertView`)}
-                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                    >
-                      <span>{expanded.has(`${card.number}-expertView`) ? '▼' : '▶'}</span>
-                      전문가 관점
-                    </button>
-                    {expanded.has(`${card.number}-expertView`) && (
-                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed pl-3">{card.expertView}</p>
-                    )}
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium text-muted-foreground">전문가 관점</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed pl-3">{card.expertView}</p>
                   </div>
                 )}
                 {card.practical && (
-                  <div>
-                    <button
-                      onClick={() => toggleExpanded(`${card.number}-practical`)}
-                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                    >
-                      <span>{expanded.has(`${card.number}-practical`) ? '▼' : '▶'}</span>
-                      실무 적용
-                    </button>
-                    {expanded.has(`${card.number}-practical`) && (
-                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed pl-3">{card.practical}</p>
-                    )}
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium text-muted-foreground">실무 적용</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed pl-3">{card.practical}</p>
                   </div>
                 )}
                 {card.characterMent && (
-                  <div>
-                    <button
-                      onClick={() => toggleExpanded(`${card.number}-characterMent`)}
-                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                    >
-                      <span>{expanded.has(`${card.number}-characterMent`) ? '▼' : '▶'}</span>
-                      캐릭터 멘트
-                    </button>
-                    {expanded.has(`${card.number}-characterMent`) && (
-                      <p className="mt-1 text-xs font-medium pl-3">&ldquo;{card.characterMent}&rdquo;</p>
-                    )}
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium text-muted-foreground">캐릭터 멘트</p>
+                    <p className="text-xs font-medium pl-3">&ldquo;{card.characterMent}&rdquo;</p>
                   </div>
                 )}
               </div>
