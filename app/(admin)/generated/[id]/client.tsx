@@ -58,10 +58,11 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
         setFeedback('')
         router.refresh()
       } else {
-        setMsg('재생성 실패')
+        const data = await res.json().catch(() => ({}))
+        setMsg(`재생성 실패: ${data.error ?? res.status}`)
       }
-    } catch {
-      setMsg('재생성 실패')
+    } catch (e) {
+      setMsg(`재생성 실패: ${e instanceof Error ? e.message : '네트워크 오류'}`)
     } finally {
       setRegenerating(false)
     }

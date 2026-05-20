@@ -12,18 +12,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { generatedContentId, feedback } = await req.json()
+  let body: { generatedContentId?: string; feedback?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+  const { generatedContentId, feedback } = body
   if (!generatedContentId || !feedback?.trim()) {
     return NextResponse.json({ error: 'generatedContentId and feedback required' }, { status: 400 })
   }
 
-  const { data: existing } = await supabaseServer
+  console.log('[feedback] start id:', generatedContentId)
+
+  const { data: existing, error: fetchError } = await supabaseServer
     .from('generated_contents')
     .select('*')
     .eq('id', generatedContentId)
     .single()
 
+  if (fetchError) {
+    console.error('[feedback] supabase fetch error:', fetchError.message)
+    return NextResponse.json({ error: fetchError.message }, { status: 500 })
+  }
   if (!existing) return NextResponse.json({ error: 'Content not found' }, { status: 404 })
+
+  console.log('[feedback] fetched content, calling Claude...')
 
   const userPrompt = buildFeedbackUserPrompt(
     {
@@ -43,20 +57,29 @@ export async function POST(req: NextRequest) {
     messages: [{ role: 'user', content: userPrompt }],
   })
 
+  console.log('[feedback] Claude done, stop_reason:', msg.stop_reason)
+
   const raw = (msg.content[0] as { type: string; text: string }).text
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
+  if (!jsonMatch) {
+    console.error('[feedback] no JSON in Claude response, raw[:200]:', raw.slice(0, 200))
+    return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
+  }
 
   let result: GenerateResult
   try {
     result = JSON.parse(jsonMatch[0])
-  } catch {
+  } catch (e) {
+    console.error('[feedback] JSON parse error:', e)
     return NextResponse.json({ error: 'Failed to parse Claude response' }, { status: 500 })
   }
 
   if (!Array.isArray(result.carousel) || result.carousel.length !== 6) {
+    console.error('[feedback] carousel length:', result.carousel?.length)
     return NextResponse.json({ error: `Carousel must have exactly 6 cards, got ${result.carousel?.length ?? 0}` }, { status: 500 })
   }
+
+  console.log('[feedback] updating supabase...')
 
   const { error } = await supabaseServer
     .from('generated_contents')
@@ -69,6 +92,11 @@ export async function POST(req: NextRequest) {
     })
     .eq('id', generatedContentId)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[feedback] supabase update error:', error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  console.log('[feedback] done')
   return NextResponse.json({ ok: true })
 }
