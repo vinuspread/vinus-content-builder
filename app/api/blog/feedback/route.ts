@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { supabaseServer } from '@/lib/supabase/server'
 import { anthropic } from '@/lib/anthropic'
-import { BLOG_GENERATION_SYSTEM_PROMPT, buildBlogFeedbackUserPrompt } from '@/lib/prompts/blog-generation'
+import { buildBlogGenerationSystemPrompt, buildBlogFeedbackUserPrompt } from '@/lib/prompts/blog-generation'
 import type { BlogGenerateResult } from '@/types'
 
 export const maxDuration = 120
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4000,
-      system: BLOG_GENERATION_SYSTEM_PROMPT,
+      system: buildBlogGenerationSystemPrompt([]),
       messages: [{ role: 'user', content: userPrompt }],
     })
   } catch (e) {

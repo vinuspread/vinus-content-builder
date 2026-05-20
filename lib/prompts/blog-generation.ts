@@ -1,6 +1,6 @@
 import type { CarouselCard } from '@/types'
 
-export const BLOG_GENERATION_SYSTEM_PROMPT = `당신은 바이너스프레드 블로그 필진입니다. 중소기업·소기업·스타트업 실무자를 위한 디자인·브랜딩 아티클을 작성합니다.
+const BASE_SYSTEM_PROMPT = `당신은 바이너스프레드 블로그 필진입니다. 중소기업·소기업·스타트업 실무자를 위한 디자인·브랜딩 아티클을 작성합니다.
 
 ## 톤 원칙
 - 카드뉴스보다 차분하고 설명적인 문체
@@ -31,6 +31,21 @@ export const BLOG_GENERATION_SYSTEM_PROMPT = `당신은 바이너스프레드 �
 코드 블록 없이 아래 구조의 JSON 텍스트만 반환하세요.
 {"blogTitle": "SEO 제목 (30자 이내)", "blogContent": "블로그 본문 전체 (plain text, 줄바꿈으로만 구분)"}
 `
+
+export function buildBlogGenerationSystemPrompt(
+  references: { title: string; content: string }[]
+): string {
+  if (references.length === 0) return BASE_SYSTEM_PROMPT
+  const examplesText = references
+    .map(r => `[${r.title}]\n${r.content}`)
+    .join('\n\n---\n\n')
+  return `${BASE_SYSTEM_PROMPT}
+## 문체 참고 예시
+아래 글들의 문체·어투·단락 구성을 참고하여 작성하세요. 주제는 달라도 되지만 글 쓰는 방식은 비슷하게 맞춰주세요.
+
+${examplesText}
+`
+}
 
 export function buildBlogGenerationUserPrompt(
   contentTitle: string | null,

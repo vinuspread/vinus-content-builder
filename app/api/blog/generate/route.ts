@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { supabaseServer } from '@/lib/supabase/server'
 import { anthropic } from '@/lib/anthropic'
-import { BLOG_GENERATION_SYSTEM_PROMPT, buildBlogGenerationUserPrompt } from '@/lib/prompts/blog-generation'
+import { buildBlogGenerationSystemPrompt, buildBlogGenerationUserPrompt } from '@/lib/prompts/blog-generation'
 import type { BlogGenerateResult } from '@/types'
 
 export const maxDuration = 120
@@ -37,6 +37,13 @@ export async function POST(req: NextRequest) {
   }
   if (!source) return NextResponse.json({ error: 'Content not found' }, { status: 404 })
 
+  const { data: styleRefs } = await supabaseServer
+    .from('blog_style_references')
+    .select('title, content')
+    .order('created_at', { ascending: true })
+
+  const systemPrompt = buildBlogGenerationSystemPrompt(styleRefs ?? [])
+
   let userPrompt: string
   try {
     userPrompt = buildBlogGenerationUserPrompt(
@@ -57,7 +64,7 @@ export async function POST(req: NextRequest) {
     msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4000,
-      system: BLOG_GENERATION_SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     })
   } catch (e) {
