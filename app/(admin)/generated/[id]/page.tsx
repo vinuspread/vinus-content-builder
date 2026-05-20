@@ -14,5 +14,12 @@ export default async function GeneratedDetailPage({
     .eq('id', id)
     .single()
   if (!content) notFound()
-  return <GeneratedDetailClient content={content} />
+
+  const { data: blog } = await supabaseServer
+    .from('blog_contents')
+    .select('id')
+    .eq('generated_content_id', id)
+    .single()
+
+  return <GeneratedDetailClient content={content} initialBlogId={blog?.id ?? null} />
 }

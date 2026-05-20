@@ -9,7 +9,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export function GeneratedDetailClient({ content: initial }: { content: GeneratedContent }) {
+export function GeneratedDetailClient({
+  content: initial,
+  initialBlogId,
+}: {
+  content: GeneratedContent
+  initialBlogId: string | null
+}) {
   const [content, setContent] = useState(initial)
   const [feedback, setFeedback] = useState('')
   const [regenerating, setRegenerating] = useState(false)
@@ -19,7 +25,7 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
   const [copied, setCopied] = useState(false)
   const [blogGenerating, setBlogGenerating] = useState(false)
   const [blogElapsed, setBlogElapsed] = useState(0)
-  const [blogId, setBlogId] = useState<string | null>(null)
+  const [blogId, setBlogId] = useState<string | null>(initialBlogId)
   const blogTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const regenTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
