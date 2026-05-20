@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 
-export const maxDuration = 60
+export const maxDuration = 120
 import { supabaseServer } from '@/lib/supabase/server'
 import { anthropic } from '@/lib/anthropic'
 import { FEEDBACK_SYSTEM_PROMPT, buildFeedbackUserPrompt } from '@/lib/prompts/feedback'
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
   const msg = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 8192,
+    max_tokens: 5000,
     system: FEEDBACK_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   })
@@ -47,7 +47,12 @@ export async function POST(req: NextRequest) {
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (!jsonMatch) return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
 
-  const result: GenerateResult = JSON.parse(jsonMatch[0])
+  let result: GenerateResult
+  try {
+    result = JSON.parse(jsonMatch[0])
+  } catch {
+    return NextResponse.json({ error: 'Failed to parse Claude response' }, { status: 500 })
+  }
 
   if (!Array.isArray(result.carousel) || result.carousel.length !== 6) {
     return NextResponse.json({ error: `Carousel must have exactly 6 cards, got ${result.carousel?.length ?? 0}` }, { status: 500 })
