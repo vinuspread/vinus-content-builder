@@ -10,6 +10,7 @@ const navItems = [
   { href: '/settings/hashtags', label: '해시태그' },
   { href: '/settings/rss', label: 'RSS 소스' },
   { href: '/settings/filters', label: '수집 필터' },
+  { href: '/settings/blog-style', label: '블로그 스타일' },
 ]
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
