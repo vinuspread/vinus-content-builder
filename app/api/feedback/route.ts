@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
   const msg = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 5000,
+    max_tokens: 8000,
     system: FEEDBACK_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   })
@@ -60,17 +60,21 @@ export async function POST(req: NextRequest) {
   console.log('[feedback] Claude done, stop_reason:', msg.stop_reason)
 
   const raw = (msg.content[0] as { type: string; text: string }).text
-  const jsonMatch = raw.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) {
-    console.error('[feedback] no JSON in Claude response, raw[:200]:', raw.slice(0, 200))
+  console.log('[feedback] raw[:300]:', raw.slice(0, 300))
+
+  // 코드 펜스 안의 JSON 우선 추출, 없으면 { } 직접 추출
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
+  const jsonStr = fenceMatch ? fenceMatch[1].trim() : raw.match(/\{[\s\S]*\}/)?.[0]
+  if (!jsonStr) {
+    console.error('[feedback] no JSON found in response')
     return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
   }
 
   let result: GenerateResult
   try {
-    result = JSON.parse(jsonMatch[0])
+    result = JSON.parse(jsonStr)
   } catch (e) {
-    console.error('[feedback] JSON parse error:', e)
+    console.error('[feedback] JSON parse error:', e, 'jsonStr[:200]:', jsonStr.slice(0, 200))
     return NextResponse.json({ error: 'Failed to parse Claude response' }, { status: 500 })
   }
 
