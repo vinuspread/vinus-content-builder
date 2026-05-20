@@ -103,3 +103,23 @@ export type GenerateResult = {
   instagramCaption: string
   hashtags: string[]
 }
+
+export type BlogContent = {
+  id: string
+  generated_content_id: string
+  blog_title: string
+  blog_content: string
+  is_published: boolean
+  created_at: string
+  updated_at: string
+  generated_content?: {
+    id: string
+    content_title: string | null
+    content_type: { name: string } | null
+  } | null
+}
+
+export type BlogGenerateResult = {
+  blogTitle: string
+  blogContent: string
+}
