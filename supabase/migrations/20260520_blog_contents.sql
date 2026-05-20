@@ -10,7 +10,7 @@ CREATE TABLE blog_contents (
 
 CREATE TRIGGER update_blog_contents_updated_at
   BEFORE UPDATE ON blog_contents
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 ALTER TABLE blog_contents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "allow all" ON blog_contents FOR ALL USING (true) WITH CHECK (true);
