@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { GeneratedContent } from '@/types'
 import { Button } from '@/components/ui/button'
@@ -12,10 +12,22 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
   const [content, setContent] = useState(initial)
   const [feedback, setFeedback] = useState('')
   const [regenerating, setRegenerating] = useState(false)
+  const [regenElapsed, setRegenElapsed] = useState(0)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [copied, setCopied] = useState(false)
+  const regenTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    if (regenerating) {
+      setRegenElapsed(0)
+      regenTimerRef.current = setInterval(() => setRegenElapsed(s => s + 1), 1000)
+    } else {
+      if (regenTimerRef.current) clearInterval(regenTimerRef.current)
+    }
+    return () => { if (regenTimerRef.current) clearInterval(regenTimerRef.current) }
+  }, [regenerating])
 
   function handleCopyAll() {
     const lines: string[] = []
@@ -265,8 +277,16 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
               disabled={regenerating || !feedback.trim()}
               className="w-full"
             >
-              {regenerating ? '재생성 중...' : '재생성'}
+              {regenerating ? `재생성 중... ${regenElapsed}초` : '재생성'}
             </Button>
+            {regenerating && (
+              <div className="h-0.5 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-foreground transition-all duration-1000"
+                  style={{ width: `${Math.min(92, Math.round(92 * (1 - Math.exp(-regenElapsed / 28))))}%` }}
+                />
+              </div>
+            )}
           </div>
 
           {msg && <p className="text-xs text-muted-foreground">{msg}</p>}
