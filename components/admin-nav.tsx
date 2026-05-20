@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 const navLinks = [
   { href: '/collected', label: '수집콘텐츠', prefix: '/collected' },
   { href: '/generated', label: '카드뉴스목록', prefix: '/generated' },
+  { href: '/blog', label: '블로그목록', prefix: '/blog' },
   { href: '/settings/content-types', label: '설정', prefix: '/settings' },
 ]
 

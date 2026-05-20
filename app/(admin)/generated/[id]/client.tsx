@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { GeneratedContent } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,6 +17,10 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [copied, setCopied] = useState(false)
+  const [blogGenerating, setBlogGenerating] = useState(false)
+  const [blogElapsed, setBlogElapsed] = useState(0)
+  const [blogId, setBlogId] = useState<string | null>(null)
+  const blogTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const regenTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const router = useRouter()
 
@@ -32,6 +37,16 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
     }
     return () => { if (regenTimerRef.current) clearInterval(regenTimerRef.current) }
   }, [regenerating])
+
+  useEffect(() => {
+    if (blogGenerating) {
+      setBlogElapsed(0)
+      blogTimerRef.current = setInterval(() => setBlogElapsed(s => s + 1), 1000)
+    } else {
+      if (blogTimerRef.current) clearInterval(blogTimerRef.current)
+    }
+    return () => { if (blogTimerRef.current) clearInterval(blogTimerRef.current) }
+  }, [blogGenerating])
 
   function handleCopyAll() {
     const lines: string[] = []
@@ -81,6 +96,30 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
       setMsg(`재생성 실패: ${e instanceof Error ? e.message : '네트워크 오류'}`)
     } finally {
       setRegenerating(false)
+    }
+  }
+
+  async function handleBlogGenerate() {
+    setBlogGenerating(true)
+    setMsg('')
+    try {
+      const res = await fetch('/api/blog/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generatedContentId: content.id }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setBlogId(data.id)
+        router.push(`/blog/${data.id}`)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setMsg(`블로그 생성 실패: ${data.error ?? res.status}`)
+      }
+    } catch (e) {
+      setMsg(`블로그 생성 실패: ${e instanceof Error ? e.message : '네트워크 오류'}`)
+    } finally {
+      setBlogGenerating(false)
     }
   }
 
@@ -290,6 +329,41 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
                   style={{ width: `${Math.min(92, Math.round(92 * (1 - Math.exp(-regenElapsed / 28))))}%` }}
                 />
               </div>
+            )}
+          </div>
+
+          <div className="border-t border-border/40" />
+
+          {/* 블로그 */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">블로그</p>
+            {blogId ? (
+              <Link
+                href={`/blog/${blogId}`}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                블로그 보기 ↗
+              </Link>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleBlogGenerate}
+                  disabled={blogGenerating}
+                  className="w-full"
+                >
+                  {blogGenerating ? `블로그 생성 중... ${blogElapsed}초` : '블로그 생성'}
+                </Button>
+                {blogGenerating && (
+                  <div className="h-0.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-foreground transition-all duration-1000"
+                      style={{ width: `${Math.min(92, Math.round(92 * (1 - Math.exp(-blogElapsed / 28))))}%` }}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
 
