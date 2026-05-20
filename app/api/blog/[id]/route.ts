@@ -14,6 +14,9 @@ export async function PATCH(
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
+  if (typeof body.is_published !== 'boolean') {
+    return NextResponse.json({ error: 'is_published must be a boolean' }, { status: 400 })
+  }
   const { error } = await supabaseServer
     .from('blog_contents')
     .update({ is_published: body.is_published })

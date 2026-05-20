@@ -45,12 +45,18 @@ export async function POST(req: NextRequest) {
 
   console.log('[blog/feedback] calling Claude...')
 
-  const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 4000,
-    system: BLOG_GENERATION_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userPrompt }],
-  })
+  let msg: Awaited<ReturnType<typeof anthropic.messages.create>>
+  try {
+    msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      system: BLOG_GENERATION_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+  } catch (e) {
+    console.error('[blog/feedback] Claude error:', e)
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Claude API error' }, { status: 500 })
+  }
 
   console.log('[blog/feedback] Claude done')
 

@@ -37,21 +37,33 @@ export async function POST(req: NextRequest) {
   }
   if (!source) return NextResponse.json({ error: 'Content not found' }, { status: 404 })
 
-  const userPrompt = buildBlogGenerationUserPrompt(
-    source.content_title,
-    source.core_message,
-    Array.isArray(source.carousel_content) ? source.carousel_content : [],
-    source.instagram_caption,
-  )
+  let userPrompt: string
+  try {
+    userPrompt = buildBlogGenerationUserPrompt(
+      source.content_title,
+      source.core_message,
+      Array.isArray(source.carousel_content) ? source.carousel_content : [],
+      source.instagram_caption,
+    )
+  } catch (e) {
+    console.error('[blog/generate] prompt build error:', e)
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Failed to build prompt' }, { status: 400 })
+  }
 
   console.log('[blog/generate] calling Claude...')
 
-  const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 4000,
-    system: BLOG_GENERATION_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userPrompt }],
-  })
+  let msg: Awaited<ReturnType<typeof anthropic.messages.create>>
+  try {
+    msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      system: BLOG_GENERATION_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+  } catch (e) {
+    console.error('[blog/generate] Claude error:', e)
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Claude API error' }, { status: 500 })
+  }
 
   console.log('[blog/generate] Claude done, stop_reason:', msg.stop_reason)
 
