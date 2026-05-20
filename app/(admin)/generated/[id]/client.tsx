@@ -20,6 +20,10 @@ export function GeneratedDetailClient({ content: initial }: { content: Generated
   const router = useRouter()
 
   useEffect(() => {
+    setContent(initial)
+  }, [initial])
+
+  useEffect(() => {
     if (regenerating) {
       setRegenElapsed(0)
       regenTimerRef.current = setInterval(() => setRegenElapsed(s => s + 1), 1000)
