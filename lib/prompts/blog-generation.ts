@@ -38,6 +38,10 @@ export function buildBlogGenerationUserPrompt(
   carousel: CarouselCard[],
   instagramCaption: string | null,
 ): string {
+  if (carousel.length === 0) {
+    throw new Error('buildBlogGenerationUserPrompt: carousel must not be empty')
+  }
+
   const cardsText = carousel.map(card => {
     const lines = [
       `[카드 ${card.number} · ${card.role}]`,
