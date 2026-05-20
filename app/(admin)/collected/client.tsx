@@ -4,16 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { CollectedContent, ContentType } from '@/types'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
 export function CollectedList({
   contents,
   contentTypes,
-  generatedContentIds,
 }: {
   contents: CollectedContent[]
   contentTypes: Pick<ContentType, 'id' | 'name'>[]
-  generatedContentIds: string[]
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -26,7 +23,6 @@ export function CollectedList({
   const [menuOpen, setMenuOpen] = useState(false)
   const collectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const generateTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const generatedSet = new Set(generatedContentIds)
 
   useEffect(() => {
     if (collecting) {
@@ -207,8 +203,8 @@ export function CollectedList({
           defaultValue={searchParams.get('sort') ?? ''}
           className="h-7 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
         >
-          <option value="">반응 수</option>
-          <option value="collected">수집일</option>
+          <option value="">수집일</option>
+          <option value="likes">반응 수</option>
           <option value="published">발행일</option>
         </select>
       </div>
@@ -216,15 +212,11 @@ export function CollectedList({
       {/* 목록 */}
       <div className="divide-y divide-border/40">
         {contents.map(content => {
-          const isGenerated = generatedSet.has(content.id)
+          const d = new Date(content.collected_at)
+          const p = (n: number) => String(n).padStart(2, '0')
+          const dateLabel = isNaN(d.getTime()) ? '' : `${p(d.getMonth() + 1)}.${p(d.getDate())}`
           return (
-            <div
-              key={content.id}
-              className={cn(
-                'flex items-center gap-3 py-2.5',
-                isGenerated && 'opacity-40'
-              )}
-            >
+            <div key={content.id} className="flex items-center gap-3 py-2.5">
               <span className="shrink-0 text-xs text-muted-foreground w-[72px]">
                 {content.source_type === 'instagram' ? 'Instagram' : 'RSS'}
               </span>
@@ -233,6 +225,9 @@ export function CollectedList({
               </span>
               <span className="flex-1 text-sm truncate">
                 {content.title ?? content.caption?.slice(0, 80)}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground w-10 text-right">
+                {dateLabel}
               </span>
               <a
                 href={content.original_url}
@@ -246,14 +241,12 @@ export function CollectedList({
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => !isGenerated && handleGenerate(content.id)}
-                  disabled={generating === content.id || isGenerated}
+                  onClick={() => handleGenerate(content.id)}
+                  disabled={generating === content.id}
                   className="h-7 text-xs w-full"
                 >
                   {generating === content.id
                     ? `생성 중... ${generateElapsed}초`
-                    : isGenerated
-                    ? '생성완료'
                     : '카드뉴스 생성'}
                 </Button>
                 {generating === content.id && (
