@@ -27,13 +27,9 @@ export const BLOG_GENERATION_SYSTEM_PROMPT = `당신은 바이너스프레드 �
 5. 전체 길이는 내용 깊이에 따라 1500~3000자로 자율 조정
 6. SEO를 고려한 제목: 핵심 키워드 포함, 30자 이내
 
-## 출력 형식 (반드시 JSON만 반환)
-\`\`\`json
-{
-  "blogTitle": "SEO 제목 (30자 이내)",
-  "blogContent": "블로그 본문 전체 (plain text, 줄바꿈으로만 구분)"
-}
-\`\`\`
+출력 형식 (반드시 JSON만 반환):
+코드 블록 없이 아래 구조의 JSON 텍스트만 반환하세요.
+{"blogTitle": "SEO 제목 (30자 이내)", "blogContent": "블로그 본문 전체 (plain text, 줄바꿈으로만 구분)"}
 `
 
 export function buildBlogGenerationUserPrompt(
