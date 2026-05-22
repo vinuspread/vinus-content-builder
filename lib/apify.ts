@@ -34,14 +34,19 @@ async function runApifyActor(input: Record<string, unknown>): Promise<ApifyInsta
   const runId: string = runData.data.id
   const datasetId: string = runData.data.defaultDatasetId
 
+  let succeeded = false
   for (let i = 0; i < 30; i++) {
     await new Promise(r => setTimeout(r, 10000))
     const statusRes = await fetch(`${APIFY_BASE_URL}/actor-runs/${runId}?token=${token}`)
     const statusData = await statusRes.json()
     const status: string = statusData.data.status
-    if (status === 'SUCCEEDED') break
-    if (status === 'FAILED' || status === 'ABORTED') throw new Error(`Apify run ${status}`)
+    console.log(`[apify] run ${runId} status: ${status} (attempt ${i + 1})`)
+    if (status === 'SUCCEEDED') { succeeded = true; break }
+    if (status === 'FAILED' || status === 'ABORTED' || status === 'TIMED-OUT') {
+      throw new Error(`Apify run ${status}`)
+    }
   }
+  if (!succeeded) throw new Error('Apify run timed out (polling limit reached)')
 
   const itemsRes = await fetch(`${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${token}&limit=200`)
   if (!itemsRes.ok) throw new Error(`Apify dataset fetch failed: ${itemsRes.status}`)

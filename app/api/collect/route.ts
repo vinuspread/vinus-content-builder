@@ -11,7 +11,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const results = { instagram: 0, rss: 0, skipped: 0, errors: [] as string[] }
+  const results = { instagram: 0, rss: 0, skipped: 0, errors: [] as string[], debug: {} as Record<string, unknown> }
 
   const { data: filters } = await supabaseServer.from('collection_filters').select('*')
   const filterMap: Record<string, string> = {}
@@ -25,6 +25,12 @@ export async function POST() {
 
   const whitelistHandles = (whitelist ?? []).map(w => w.handle)
   const hashtagList = (hashtags ?? []).map(h => h.hashtag)
+
+  results.debug = {
+    whitelistCount: whitelistHandles.length,
+    hashtagCount: hashtagList.length,
+    whitelistRatio,
+  }
 
   const totalInstagram = 30
   const whitelistCount = Math.round(totalInstagram * whitelistRatio / 100)

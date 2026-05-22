@@ -51,10 +51,14 @@ export function CollectedList({
     try {
       const res = await fetch('/api/collect', { method: 'POST' })
       const data = await res.json()
+      const d = data.debug ?? {}
+      const debugStr = d.whitelistCount !== undefined
+        ? ` (계정 ${d.whitelistCount}개, 해시태그 ${d.hashtagCount}개 활성)`
+        : ''
       if (data.errors?.length) {
-        setMsg(`수집 완료 — Instagram ${data.instagram}개, RSS ${data.rss}개 · 오류: ${data.errors.join(', ')}`)
+        setMsg(`수집 완료 — Instagram ${data.instagram}개, RSS ${data.rss}개${debugStr} · 오류: ${data.errors.join(', ')}`)
       } else {
-        setMsg(`수집 완료 — Instagram ${data.instagram}개, RSS ${data.rss}개`)
+        setMsg(`수집 완료 — Instagram ${data.instagram}개, RSS ${data.rss}개${debugStr}`)
       }
       router.refresh()
     } catch {
