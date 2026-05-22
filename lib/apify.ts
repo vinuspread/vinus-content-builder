@@ -73,22 +73,32 @@ function isNoise(post: ApifyInstagramPost, filters: { minLikes: number; adKeywor
 
 export async function collectInstagramWhitelist(handles: string[], limit = 20): Promise<ApifyInstagramPost[]> {
   const filters = await getFilters()
+  const directUrls = handles.map(h => `https://www.instagram.com/${h.replace('@', '')}/`)
+  console.log('[apify/whitelist] directUrls:', directUrls, 'limit:', limit)
   const posts = await runApifyActor({
-    usernames: handles.map(h => h.replace('@', '')),
+    directUrls,
+    resultsType: 'posts',
     resultsLimit: limit,
-    addParentData: false,
   })
-  return posts.filter(p => !isNoise(p, filters))
+  console.log('[apify/whitelist] raw posts:', posts.length, 'minLikes filter:', filters.minLikes)
+  const filtered = posts.filter(p => !isNoise(p, filters))
+  console.log('[apify/whitelist] after filter:', filtered.length)
+  return filtered
 }
 
 export async function collectInstagramHashtags(hashtags: string[], limit = 10): Promise<ApifyInstagramPost[]> {
   const filters = await getFilters()
+  const directUrls = hashtags.map(h => `https://www.instagram.com/explore/tags/${h.replace('#', '')}/`)
+  console.log('[apify/hashtags] directUrls:', directUrls, 'limit:', limit)
   const posts = await runApifyActor({
-    hashtags: hashtags.map(h => h.replace('#', '')),
+    directUrls,
+    resultsType: 'posts',
     resultsLimit: limit,
-    addParentData: false,
   })
-  return posts.filter(p => !isNoise(p, filters))
+  console.log('[apify/hashtags] raw posts:', posts.length, 'minLikes filter:', filters.minLikes)
+  const filtered = posts.filter(p => !isNoise(p, filters))
+  console.log('[apify/hashtags] after filter:', filtered.length)
+  return filtered
 }
 
 export function normalizeInstagramPost(post: ApifyInstagramPost) {

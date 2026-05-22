@@ -39,6 +39,7 @@ export async function POST() {
   try {
     if (whitelistHandles.length > 0) {
       const posts = await collectInstagramWhitelist(whitelistHandles, whitelistCount)
+      ;(results.debug as Record<string, unknown>).whitelistRawCount = posts.length
       for (const post of posts) {
         const normalized = normalizeInstagramPost(post)
         const { error } = await supabaseServer
@@ -50,6 +51,7 @@ export async function POST() {
     }
     if (hashtagList.length > 0) {
       const posts = await collectInstagramHashtags(hashtagList, hashtagCount)
+      ;(results.debug as Record<string, unknown>).hashtagRawCount = posts.length
       for (const post of posts) {
         const normalized = normalizeInstagramPost(post)
         const { error } = await supabaseServer
