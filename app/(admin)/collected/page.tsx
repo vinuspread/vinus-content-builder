@@ -8,16 +8,10 @@ export default async function CollectedPage({
 }) {
   const params = await searchParams
 
-  const { data: contentTypes } = await supabaseServer
-    .from('content_types')
-    .select('id, name')
-    .eq('is_active', true)
-    .order('sort_order')
-
-  const { data: generatedIds } = await supabaseServer
-    .from('generated_contents')
-    .select('source_content_id')
-    .not('source_content_id', 'is', null)
+  const [{ data: contentTypes }, { data: generatedIds }] = await Promise.all([
+    supabaseServer.from('content_types').select('id, name').eq('is_active', true).order('sort_order'),
+    supabaseServer.from('generated_contents').select('source_content_id').not('source_content_id', 'is', null),
+  ])
 
   const generatedContentIds = (generatedIds ?? []).map(r => r.source_content_id as string)
 

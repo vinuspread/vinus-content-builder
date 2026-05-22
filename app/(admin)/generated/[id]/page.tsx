@@ -8,18 +8,21 @@ export default async function GeneratedDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const { data: content } = await supabaseServer
-    .from('generated_contents')
-    .select('*, content_type:content_types(name), source_content:collected_contents(title, original_url)')
-    .eq('id', id)
-    .single()
-  if (!content) notFound()
 
-  const { data: blog } = await supabaseServer
-    .from('blog_contents')
-    .select('id')
-    .eq('generated_content_id', id)
-    .single()
+  const [{ data: content }, { data: blog }] = await Promise.all([
+    supabaseServer
+      .from('generated_contents')
+      .select('*, content_type:content_types(name), source_content:collected_contents(title, original_url)')
+      .eq('id', id)
+      .single(),
+    supabaseServer
+      .from('blog_contents')
+      .select('id')
+      .eq('generated_content_id', id)
+      .single(),
+  ])
+
+  if (!content) notFound()
 
   return <GeneratedDetailClient content={content} initialBlogId={blog?.id ?? null} />
 }
