@@ -32,38 +32,10 @@ export async function POST() {
     whitelistRatio,
   }
 
-  const totalInstagram = 30
-  const whitelistCount = Math.round(totalInstagram * whitelistRatio / 100)
-  const hashtagCount = totalInstagram - whitelistCount
-
-  try {
-    if (whitelistHandles.length > 0) {
-      const posts = await collectInstagramWhitelist(whitelistHandles, whitelistCount)
-      ;(results.debug as Record<string, unknown>).whitelistRawCount = posts.length
-      for (const post of posts) {
-        const normalized = normalizeInstagramPost(post)
-        const { error } = await supabaseServer
-          .from('collected_contents')
-          .upsert(normalized, { onConflict: 'original_url', ignoreDuplicates: true })
-        if (!error) results.instagram++
-        else results.skipped++
-      }
-    }
-    if (hashtagList.length > 0) {
-      const posts = await collectInstagramHashtags(hashtagList, hashtagCount)
-      ;(results.debug as Record<string, unknown>).hashtagRawCount = posts.length
-      for (const post of posts) {
-        const normalized = normalizeInstagramPost(post)
-        const { error } = await supabaseServer
-          .from('collected_contents')
-          .upsert(normalized, { onConflict: 'original_url', ignoreDuplicates: true })
-        if (!error) results.instagram++
-        else results.skipped++
-      }
-    }
-  } catch (e) {
-    results.errors.push(`Instagram: ${e instanceof Error ? e.message : String(e)}`)
-  }
+  // Instagram 수집 정지
+  void whitelistHandles
+  void hashtagList
+  void whitelistRatio
 
   try {
     const rssItems = await collectRss(15)
