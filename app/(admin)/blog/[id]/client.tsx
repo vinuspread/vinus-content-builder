@@ -64,10 +64,15 @@ export function BlogDetailClient({ blog: initial }: { blog: BlogContent }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_published: blog.is_published }),
       })
-      setMsg(res.ok ? '저장됐습니다.' : '저장 실패')
+      if (res.ok) {
+        router.push('/blog')
+        router.refresh()
+      } else {
+        setMsg('저장 실패')
+        setSaving(false)
+      }
     } catch {
       setMsg('저장 실패')
-    } finally {
       setSaving(false)
     }
   }

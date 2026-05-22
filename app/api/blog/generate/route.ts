@@ -95,26 +95,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid response structure' }, { status: 500 })
   }
 
-  console.log('[blog/generate] upserting...')
+  console.log('[blog/generate] checking existing...')
 
-  const { data: blog, error: upsertError } = await supabaseServer
+  const { data: existing } = await supabaseServer
     .from('blog_contents')
-    .upsert(
-      {
-        generated_content_id: generatedContentId,
-        blog_title: result.blogTitle,
-        blog_content: result.blogContent,
-      },
-      { onConflict: 'generated_content_id' }
-    )
     .select('id')
-    .single()
+    .eq('generated_content_id', generatedContentId)
+    .maybeSingle()
 
-  if (upsertError) {
-    console.error('[blog/generate] upsert error:', upsertError.message)
-    return NextResponse.json({ error: upsertError.message }, { status: 500 })
+  let blogId: string
+
+  if (existing) {
+    console.log('[blog/generate] updating existing id:', existing.id)
+    const { error: updateError } = await supabaseServer
+      .from('blog_contents')
+      .update({ blog_title: result.blogTitle, blog_content: result.blogContent })
+      .eq('id', existing.id)
+    if (updateError) {
+      console.error('[blog/generate] update error:', updateError.message)
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+    blogId = existing.id
+  } else {
+    console.log('[blog/generate] inserting new...')
+    const { data: created, error: insertError } = await supabaseServer
+      .from('blog_contents')
+      .insert({ generated_content_id: generatedContentId, blog_title: result.blogTitle, blog_content: result.blogContent })
+      .select('id')
+      .single()
+    if (insertError) {
+      console.error('[blog/generate] insert error:', insertError.message)
+      return NextResponse.json({ error: insertError.message }, { status: 500 })
+    }
+    blogId = created.id
   }
 
-  console.log('[blog/generate] done, id:', blog.id)
-  return NextResponse.json({ id: blog.id })
+  console.log('[blog/generate] done, id:', blogId)
+  return NextResponse.json({ id: blogId })
 }
