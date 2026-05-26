@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { CollectedContent, ContentType } from '@/types'
 import { Button } from '@/components/ui/button'
+import { useBatch } from '@/lib/batch-context'
 
 export function CollectedList({
   contents,
@@ -18,7 +19,8 @@ export function CollectedList({
   const [classifying, setClassifying] = useState(false)
   const [msg, setMsg] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null)
+  const { job, startCardnewsBatch } = useBatch()
+  const batchProgress = job?.type === 'cardnews' ? job : null
   const [collectElapsed, setCollectElapsed] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const collectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -81,28 +83,11 @@ export function CollectedList({
     }
   }
 
-  async function handleBatchGenerate() {
+  function handleBatchGenerate() {
     const ids = [...selected]
     if (ids.length === 0) return
     setSelected(new Set())
-    setBatchProgress({ current: 0, total: ids.length })
-    let done = 0
-    for (const id of ids) {
-      setBatchProgress({ current: done, total: ids.length })
-      try {
-        await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sourceContentId: id }),
-        })
-      } catch {
-        // 실패해도 다음 항목 계속 처리
-      }
-      done++
-    }
-    setBatchProgress(null)
-    setMsg(`카드뉴스 생성 완료 — ${ids.length}개`)
-    router.refresh()
+    startCardnewsBatch(ids)
   }
 
   function toggleAll() {

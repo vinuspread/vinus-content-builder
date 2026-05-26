@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { useBatch } from '@/lib/batch-context'
 
 type ContentItem = {
   id: string
@@ -27,7 +28,8 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
   const [elapsed, setElapsed] = useState(0)
   const [toast, setToast] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null)
+  const { job, startBlogBatch } = useBatch()
+  const batchProgress = job?.type === 'blog' ? job : null
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -77,28 +79,11 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
     }
   }
 
-  async function handleBatchBlog() {
+  function handleBatchBlog() {
     const ids = [...selected]
     if (ids.length === 0) return
     setSelected(new Set())
-    setBatchProgress({ current: 0, total: ids.length })
-    let done = 0
-    for (const id of ids) {
-      setBatchProgress({ current: done, total: ids.length })
-      try {
-        await fetch('/api/blog/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ generatedContentId: id }),
-        })
-      } catch {
-        // 실패해도 다음 항목 계속 처리
-      }
-      done++
-    }
-    setBatchProgress(null)
-    showToast(`블로그 생성 완료 — ${ids.length}개`)
-    router.refresh()
+    startBlogBatch(ids)
   }
 
   function toggleAll() {
