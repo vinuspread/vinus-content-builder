@@ -26,12 +26,18 @@ export function AdminNav() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
       {job && (
-        <div className="h-0.5 w-full bg-muted overflow-hidden absolute bottom-0 left-0">
-          <div
-            className="h-full bg-foreground transition-all duration-300"
-            style={{ width: `${Math.round((job.current / job.total) * 100)}%` }}
-          />
-        </div>
+        <>
+          <div className="h-0.5 w-full bg-muted overflow-hidden absolute bottom-0 left-0">
+            <div
+              className="h-full bg-foreground transition-all duration-300"
+              style={{ width: `${Math.round((job.current / job.total) * 100)}%` }}
+            />
+          </div>
+          <div className="absolute bottom-1.5 right-6 text-[10px] text-muted-foreground">
+            {job.type === 'cardnews' ? '카드뉴스' : '블로그'} 생성 중 {job.current}/{job.total}
+            {job.failed > 0 && ` · 실패 ${job.failed}개`}
+          </div>
+        </>
       )}
       <div className="flex h-14 items-center px-6 gap-8">
         <span className="font-bold text-sm tracking-tight text-foreground">바이너스 빌더</span>

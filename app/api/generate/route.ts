@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 
-export const maxDuration = 60
+export const maxDuration = 120
 import { supabaseServer } from '@/lib/supabase/server'
 import { anthropic } from '@/lib/anthropic'
 import { GENERATION_SYSTEM_PROMPT, buildGenerationUserPrompt } from '@/lib/prompts/generation'

@@ -7,6 +7,7 @@ type BatchJob = {
   type: 'cardnews' | 'blog'
   current: number
   total: number
+  failed: number
 }
 
 type BatchContextValue = {
@@ -30,42 +31,56 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
     if (runningRef.current || ids.length === 0) return
     runningRef.current = true
     let done = 0
-    setJob({ type: 'cardnews', current: 0, total: ids.length })
-    for (const id of ids) {
-      setJob({ type: 'cardnews', current: done, total: ids.length })
-      try {
-        await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sourceContentId: id }),
-        })
-      } catch {}
-      done++
+    let failed = 0
+    try {
+      setJob({ type: 'cardnews', current: 0, total: ids.length, failed: 0 })
+      for (const id of ids) {
+        setJob({ type: 'cardnews', current: done, total: ids.length, failed })
+        try {
+          const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sourceContentId: id }),
+          })
+          if (!res.ok) failed++
+        } catch {
+          failed++
+        }
+        done++
+      }
+    } finally {
+      setJob(null)
+      runningRef.current = false
+      router.refresh()
     }
-    setJob(null)
-    runningRef.current = false
-    router.refresh()
   }, [router])
 
   const startBlogBatch = useCallback(async (ids: string[]) => {
     if (runningRef.current || ids.length === 0) return
     runningRef.current = true
     let done = 0
-    setJob({ type: 'blog', current: 0, total: ids.length })
-    for (const id of ids) {
-      setJob({ type: 'blog', current: done, total: ids.length })
-      try {
-        await fetch('/api/blog/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ generatedContentId: id }),
-        })
-      } catch {}
-      done++
+    let failed = 0
+    try {
+      setJob({ type: 'blog', current: 0, total: ids.length, failed: 0 })
+      for (const id of ids) {
+        setJob({ type: 'blog', current: done, total: ids.length, failed })
+        try {
+          const res = await fetch('/api/blog/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ generatedContentId: id }),
+          })
+          if (!res.ok) failed++
+        } catch {
+          failed++
+        }
+        done++
+      }
+    } finally {
+      setJob(null)
+      runningRef.current = false
+      router.refresh()
     }
-    setJob(null)
-    runningRef.current = false
-    router.refresh()
   }, [router])
 
   return (
