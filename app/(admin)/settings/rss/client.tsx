@@ -13,14 +13,13 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
   const [tab, setTab] = useState(RSS_GROUPS[0])
   const [newName, setNewName] = useState('')
   const [newUrl, setNewUrl] = useState('')
-  const [newGroup, setNewGroup] = useState(RSS_GROUPS[0])
 
   async function handleAdd() {
     if (!newName.trim() || !newUrl.trim()) return
     const res = await fetch('/api/settings/rss', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName.trim(), url: newUrl.trim(), group_name: newGroup }),
+      body: JSON.stringify({ name: newName.trim(), url: newUrl.trim(), group_name: tab }),
     })
     if (res.ok) {
       const { item } = await res.json()
@@ -72,13 +71,6 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
       <div className="flex gap-2 flex-wrap">
         <Input placeholder="RSS 이름" value={newName} onChange={e => setNewName(e.target.value)} className="w-36" />
         <Input placeholder="RSS URL" value={newUrl} onChange={e => setNewUrl(e.target.value)} className="flex-1 min-w-48" />
-        <select
-          value={newGroup}
-          onChange={e => setNewGroup(e.target.value)}
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          {RSS_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
-        </select>
         <Button onClick={handleAdd}>추가</Button>
       </div>
 
