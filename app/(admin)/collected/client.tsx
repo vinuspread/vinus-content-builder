@@ -91,18 +91,16 @@ export function CollectedList({
   }
 
   function toggleAll() {
-    if (selected.size === contents.length) {
-      setSelected(new Set())
-    } else {
-      setSelected(new Set(contents.map(c => c.id)))
-    }
+    setSelected(prev => prev.size === contents.length ? new Set() : new Set(contents.map(c => c.id)))
   }
 
   function toggleOne(id: string) {
-    const next = new Set(selected)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    setSelected(next)
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   function updateFilter(key: string, value: string) {
