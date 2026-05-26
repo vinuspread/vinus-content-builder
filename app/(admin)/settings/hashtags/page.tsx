@@ -1,4 +1,6 @@
 import { supabaseServer } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 import { HashtagsClient } from './client'
 
 export default async function HashtagsPage() {
