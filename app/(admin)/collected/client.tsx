@@ -249,7 +249,7 @@ export function CollectedList({
                   size="sm"
                   variant="ghost"
                   onClick={() => handleGenerate(content.id)}
-                  disabled={generating === content.id}
+                  disabled={!!generating}
                   className="h-7 text-xs w-full"
                 >
                   {generating === content.id
