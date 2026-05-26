@@ -30,8 +30,8 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
   }
 
   async function handleDelete(id: string) {
-    await fetch(`/api/settings/rss/${id}`, { method: 'DELETE' })
-    setSources(sources.filter(s => s.id !== id))
+    const res = await fetch(`/api/settings/rss/${id}`, { method: 'DELETE' })
+    if (res.ok) setSources(sources.filter(s => s.id !== id))
   }
 
   async function handleToggle(id: string, isActive: boolean) {
