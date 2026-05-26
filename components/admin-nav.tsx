@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useBatch } from '@/lib/batch-context'
@@ -16,12 +17,20 @@ const navLinks = [
 export function AdminNav() {
   const pathname = usePathname()
   const router = useRouter()
-  const { job } = useBatch()
+  const { job, lastResult, clearResult } = useBatch()
+
+  useEffect(() => {
+    if (!lastResult) return
+    const timer = setTimeout(clearResult, 5000)
+    return () => clearTimeout(timer)
+  }, [lastResult, clearResult])
 
   async function handleLogout() {
     await fetch('/api/auth', { method: 'DELETE' })
     router.push('/login')
   }
+
+  const typeName = (job?.type ?? lastResult?.type) === 'cardnews' ? '카드뉴스' : '블로그'
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
@@ -34,10 +43,18 @@ export function AdminNav() {
             />
           </div>
           <div className="absolute bottom-1.5 right-6 text-[10px] text-muted-foreground">
-            {job.type === 'cardnews' ? '카드뉴스' : '블로그'} 생성 중 {job.current}/{job.total}
+            {typeName} 생성 중 {job.current}/{job.total}
             {job.failed > 0 && ` · 실패 ${job.failed}개`}
           </div>
         </>
+      )}
+      {!job && lastResult && (
+        <div className="absolute bottom-1.5 right-6 text-[10px] text-muted-foreground">
+          {typeName} 생성 완료 — {lastResult.succeeded}개 성공
+          {lastResult.failed > 0 && (
+            <span className="text-destructive"> · {lastResult.failed}개 실패{lastResult.errors[0] ? `: ${lastResult.errors[0]}` : ''}</span>
+          )}
+        </div>
       )}
       <div className="flex h-14 items-center px-6 gap-8">
         <span className="font-bold text-sm tracking-tight text-foreground">바이너스 빌더</span>
@@ -61,10 +78,10 @@ export function AdminNav() {
           })}
         </nav>
         <div className="ml-auto">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleLogout} 
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
             className="text-muted-foreground hover:text-foreground transition-none"
           >
             로그아웃
