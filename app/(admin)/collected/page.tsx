@@ -1,6 +1,8 @@
 import { supabaseServer } from '@/lib/supabase/server'
 import { CollectedList } from './client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function CollectedPage({
   searchParams,
 }: {
