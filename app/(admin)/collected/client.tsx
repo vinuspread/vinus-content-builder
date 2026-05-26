@@ -17,12 +17,11 @@ export function CollectedList({
   const [collecting, setCollecting] = useState(false)
   const [classifying, setClassifying] = useState(false)
   const [msg, setMsg] = useState('')
-  const [generating, setGenerating] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null)
   const [collectElapsed, setCollectElapsed] = useState(0)
-  const [generateElapsed, setGenerateElapsed] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const collectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const generateTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (collecting) {
@@ -33,16 +32,6 @@ export function CollectedList({
     }
     return () => { if (collectTimerRef.current) clearInterval(collectTimerRef.current) }
   }, [collecting])
-
-  useEffect(() => {
-    if (generating) {
-      setGenerateElapsed(0)
-      generateTimerRef.current = setInterval(() => setGenerateElapsed(s => s + 1), 1000)
-    } else {
-      if (generateTimerRef.current) clearInterval(generateTimerRef.current)
-    }
-    return () => { if (generateTimerRef.current) clearInterval(generateTimerRef.current) }
-  }, [generating])
 
   async function handleCollect() {
     setCollecting(true)
@@ -63,6 +52,7 @@ export function CollectedList({
       } else {
         setMsg(`수집 완료 — Instagram ${data.instagram}개, RSS ${data.rss}개${debugStr}`)
       }
+      setSelected(new Set())
       router.refresh()
     } catch {
       setMsg('수집 실패')
@@ -91,25 +81,43 @@ export function CollectedList({
     }
   }
 
-  async function handleGenerate(contentId: string) {
-    setGenerating(contentId)
-    try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceContentId: contentId }),
-      })
-      if (res.ok) {
-        setMsg('생성 완료')
-        router.refresh()
-      } else {
-        setMsg('생성 실패')
+  async function handleBatchGenerate() {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setSelected(new Set())
+    setBatchProgress({ current: 0, total: ids.length })
+    let done = 0
+    for (const id of ids) {
+      setBatchProgress({ current: done, total: ids.length })
+      try {
+        await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sourceContentId: id }),
+        })
+      } catch {
+        // 실패해도 다음 항목 계속 처리
       }
-    } catch {
-      setMsg('생성 실패')
-    } finally {
-      setGenerating(null)
+      done++
     }
+    setBatchProgress(null)
+    setMsg(`카드뉴스 생성 완료 — ${ids.length}개`)
+    router.refresh()
+  }
+
+  function toggleAll() {
+    if (selected.size === contents.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(contents.map(c => c.id)))
+    }
+  }
+
+  function toggleOne(id: string) {
+    const next = new Set(selected)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelected(next)
   }
 
   function updateFilter(key: string, value: string) {
@@ -131,6 +139,8 @@ export function CollectedList({
       })()
     : null
 
+  const isBusy = collecting || !!batchProgress
+
   return (
     <div className="space-y-4">
       {/* 헤더 */}
@@ -145,7 +155,12 @@ export function CollectedList({
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <Button onClick={handleCollect} disabled={collecting} size="sm">
+          {selected.size > 0 && !batchProgress && (
+            <Button onClick={handleBatchGenerate} size="sm" disabled={isBusy}>
+              카드뉴스 생성 ({selected.size}개)
+            </Button>
+          )}
+          <Button onClick={handleCollect} disabled={isBusy} size="sm" variant={selected.size > 0 ? 'outline' : 'default'}>
             {collecting ? `수집 중... ${collectElapsed}초` : '수집 실행'}
           </Button>
           <div className="relative">
@@ -172,13 +187,26 @@ export function CollectedList({
         </div>
       </div>
 
-      {/* 수집 중 진행 바 */}
+      {/* 진행 바 */}
       {collecting && (
         <div className="h-0.5 w-full rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full bg-foreground transition-all duration-1000"
             style={{ width: `${Math.min(92, Math.round(92 * (1 - Math.exp(-collectElapsed / 30))))}%` }}
           />
+        </div>
+      )}
+      {batchProgress && (
+        <div className="space-y-1">
+          <div className="h-0.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-foreground transition-all duration-300"
+              style={{ width: `${Math.round((batchProgress.current / batchProgress.total) * 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            카드뉴스 생성 중... {batchProgress.current}/{batchProgress.total}
+          </p>
         </div>
       )}
 
@@ -218,12 +246,34 @@ export function CollectedList({
 
       {/* 목록 */}
       <div className="divide-y divide-border/40">
+        {/* 전체 선택 */}
+        {contents.length > 0 && (
+          <div className="flex items-center gap-3 py-2">
+            <input
+              type="checkbox"
+              checked={selected.size === contents.length && contents.length > 0}
+              onChange={toggleAll}
+              className="h-3.5 w-3.5 rounded border-input accent-foreground"
+            />
+            <span className="text-xs text-muted-foreground">
+              {selected.size > 0 ? `${selected.size}개 선택됨` : '전체 선택'}
+            </span>
+          </div>
+        )}
+
         {contents.map(content => {
           const d = new Date(content.collected_at)
           const p = (n: number) => String(n).padStart(2, '0')
           const dateLabel = isNaN(d.getTime()) ? '' : `${p(d.getMonth() + 1)}.${p(d.getDate())}`
           return (
             <div key={content.id} className="flex items-center gap-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={selected.has(content.id)}
+                onChange={() => toggleOne(content.id)}
+                disabled={isBusy}
+                className="shrink-0 h-3.5 w-3.5 rounded border-input accent-foreground"
+              />
               <span className="shrink-0 text-xs text-muted-foreground w-[72px]">
                 {content.source_type === 'instagram' ? 'Instagram' : 'RSS'}
               </span>
@@ -244,27 +294,6 @@ export function CollectedList({
               >
                 ↗
               </a>
-              <div className="shrink-0 flex flex-col items-end gap-1 w-28">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleGenerate(content.id)}
-                  disabled={!!generating}
-                  className="h-7 text-xs w-full"
-                >
-                  {generating === content.id
-                    ? `생성 중... ${generateElapsed}초`
-                    : '카드뉴스 생성'}
-                </Button>
-                {generating === content.id && (
-                  <div className="h-0.5 w-full rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-foreground transition-all duration-1000"
-                      style={{ width: `${Math.min(92, Math.round(92 * (1 - Math.exp(-generateElapsed / 25))))}%` }}
-                    />
-                  </div>
-                )}
-              </div>
             </div>
           )
         })}

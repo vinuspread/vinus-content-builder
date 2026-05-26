@@ -26,6 +26,8 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
   const [generating, setGenerating] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [toast, setToast] = useState('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -43,6 +45,12 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
     return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }
   }, [])
 
+  function showToast(msg: string, duration = 3000) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast(msg)
+    toastTimerRef.current = setTimeout(() => setToast(''), duration)
+  }
+
   async function handleGenerate() {
     if (!topic.trim()) return
     setGenerating(true)
@@ -53,27 +61,62 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
         body: JSON.stringify({ topic: topic.trim(), content: detail.trim() }),
       })
       if (res.ok) {
-        if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-        setToast('카드뉴스가 생성됐습니다.')
-        toastTimerRef.current = setTimeout(() => setToast(''), 3000)
+        showToast('카드뉴스가 생성됐습니다.')
         setOpen(false)
         setTopic('')
         setDetail('')
         router.refresh()
       } else {
         const data = await res.json()
-        if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-        setToast(`생성 실패: ${data.error ?? '알 수 없는 오류'}`)
-        toastTimerRef.current = setTimeout(() => setToast(''), 4000)
+        showToast(`생성 실패: ${data.error ?? '알 수 없는 오류'}`, 4000)
       }
     } catch {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-      setToast('네트워크 오류가 발생했습니다.')
-      toastTimerRef.current = setTimeout(() => setToast(''), 4000)
+      showToast('네트워크 오류가 발생했습니다.', 4000)
     } finally {
       setGenerating(false)
     }
   }
+
+  async function handleBatchBlog() {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setSelected(new Set())
+    setBatchProgress({ current: 0, total: ids.length })
+    let done = 0
+    for (const id of ids) {
+      setBatchProgress({ current: done, total: ids.length })
+      try {
+        await fetch('/api/blog/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ generatedContentId: id }),
+        })
+      } catch {
+        // 실패해도 다음 항목 계속 처리
+      }
+      done++
+    }
+    setBatchProgress(null)
+    showToast(`블로그 생성 완료 — ${ids.length}개`)
+    router.refresh()
+  }
+
+  function toggleAll() {
+    if (selected.size === contents.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(contents.map(c => c.id)))
+    }
+  }
+
+  function toggleOne(id: string) {
+    const next = new Set(selected)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelected(next)
+  }
+
+  const isBusy = generating || !!batchProgress
 
   return (
     <div className="space-y-4">
@@ -85,12 +128,34 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
       )}
 
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold">카드뉴스목록</h1>
-        <Button size="sm" variant="outline" onClick={() => setOpen(v => !v)}>
-          {open ? '취소' : '+ 직접 입력'}
-        </Button>
+        <div className="flex items-center gap-1.5">
+          {selected.size > 0 && !batchProgress && (
+            <Button onClick={handleBatchBlog} size="sm" disabled={isBusy}>
+              블로그 생성 ({selected.size}개)
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={() => setOpen(v => !v)} disabled={isBusy}>
+            {open ? '취소' : '+ 직접 입력'}
+          </Button>
+        </div>
       </div>
+
+      {/* 일괄 블로그 생성 진행 바 */}
+      {batchProgress && (
+        <div className="space-y-1">
+          <div className="h-0.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-foreground transition-all duration-300"
+              style={{ width: `${Math.round((batchProgress.current / batchProgress.total) * 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            블로그 생성 중... {batchProgress.current}/{batchProgress.total}
+          </p>
+        </div>
+      )}
 
       {/* 직접 입력 폼 */}
       {open && (
@@ -135,6 +200,21 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
 
       {/* 목록 */}
       <div className="divide-y divide-border/40">
+        {/* 전체 선택 */}
+        {contents.length > 0 && (
+          <div className="flex items-center gap-3 py-2">
+            <input
+              type="checkbox"
+              checked={selected.size === contents.length && contents.length > 0}
+              onChange={toggleAll}
+              className="h-3.5 w-3.5 rounded border-input accent-foreground"
+            />
+            <span className="text-xs text-muted-foreground">
+              {selected.size > 0 ? `${selected.size}개 선택됨` : '전체 선택'}
+            </span>
+          </div>
+        )}
+
         {contents.map(content => {
           const isSelf = content.source_content_id === null
           const isPublished = content.is_published
@@ -145,27 +225,36 @@ export function GeneratedPageClient({ contents }: { contents: ContentItem[] }) {
             : `${p(d.getMonth()+1)}.${p(d.getDate())}`
 
           return (
-            <Link
-              key={content.id}
-              href={`/generated/${content.id}`}
-              className="flex items-center gap-3 py-2.5 hover:bg-muted/30 -mx-2 px-2 rounded transition-colors"
-            >
-              {isSelf && (
-                <span className="shrink-0 text-[11px] font-medium text-blue-600">자체</span>
-              )}
-              <span className={cn('flex-1 text-sm truncate', isPublished && 'text-muted-foreground')}>
-                {content.content_title ?? '(제목 없음)'}
-              </span>
-              <span className="shrink-0 text-xs text-muted-foreground w-14 text-right">
-                {content.content_type?.name ?? '미분류'}
-              </span>
-              <span className="shrink-0 text-xs text-muted-foreground w-10 text-right">
-                {dateLabel}
-              </span>
-              {isPublished && (
-                <span className="shrink-0 text-xs text-muted-foreground">✓</span>
-              )}
-            </Link>
+            <div key={content.id} className="flex items-center gap-3 py-2.5 hover:bg-muted/30 -mx-2 px-2 rounded transition-colors">
+              <input
+                type="checkbox"
+                checked={selected.has(content.id)}
+                onChange={() => toggleOne(content.id)}
+                disabled={isBusy}
+                className="shrink-0 h-3.5 w-3.5 rounded border-input accent-foreground"
+                onClick={e => e.stopPropagation()}
+              />
+              <Link
+                href={`/generated/${content.id}`}
+                className="flex flex-1 items-center gap-3 min-w-0"
+              >
+                {isSelf && (
+                  <span className="shrink-0 text-[11px] font-medium text-blue-600">자체</span>
+                )}
+                <span className={cn('flex-1 text-sm truncate', isPublished && 'text-muted-foreground')}>
+                  {content.content_title ?? '(제목 없음)'}
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground w-14 text-right">
+                  {content.content_type?.name ?? '미분류'}
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground w-10 text-right">
+                  {dateLabel}
+                </span>
+                {isPublished && (
+                  <span className="shrink-0 text-xs text-muted-foreground">✓</span>
+                )}
+              </Link>
+            </div>
           )
         })}
         {contents.length === 0 && (
