@@ -13,6 +13,7 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
   const [tab, setTab] = useState(RSS_GROUPS[0])
   const [newName, setNewName] = useState('')
   const [newUrl, setNewUrl] = useState('')
+  const [query, setQuery] = useState('')
 
   async function handleAdd() {
     if (!newName.trim() || !newUrl.trim()) return
@@ -43,12 +44,26 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
     setSources(sources.map(s => s.id === id ? { ...s, is_active: isActive } : s))
   }
 
-  const filtered = sources.filter(s => s.group_name === tab)
+  const isSearching = query.trim().length > 0
+  const filtered = isSearching
+    ? sources.filter(s =>
+        s.name.toLowerCase().includes(query.toLowerCase()) ||
+        s.url.toLowerCase().includes(query.toLowerCase())
+      )
+    : sources.filter(s => s.group_name === tab)
 
   return (
     <div className="max-w-3xl space-y-4">
+      {/* 검색 */}
+      <Input
+        placeholder="이름 또는 URL 검색"
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        className="max-w-xs"
+      />
+
       {/* 카테고리 탭 */}
-      <div className="flex flex-wrap gap-0 border-b">
+      <div className={`flex flex-wrap gap-0 border-b transition-opacity ${isSearching ? 'opacity-30 pointer-events-none' : ''}`}>
         {RSS_GROUPS.map(g => {
           const count = sources.filter(s => s.group_name === g).length
           return (
@@ -79,7 +94,9 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
         {filtered.map(source => (
           <div key={source.id} className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 ring-1 ring-foreground/5">
             <div className="flex-1 min-w-0 space-y-0.5">
-              <p className="text-sm font-medium">{source.name}</p>
+              <p className="text-sm font-medium">{source.name}
+                {isSearching && <span className="ml-2 text-[11px] font-normal text-muted-foreground">{source.group_name}</span>}
+              </p>
               <a
                 href={source.url}
                 target="_blank"
@@ -102,7 +119,9 @@ export function RssClient({ initialSources }: { initialSources: RssSource[] }) {
           </div>
         ))}
         {filtered.length === 0 && (
-          <p className="py-8 text-center text-xs text-muted-foreground">이 카테고리에 RSS 소스가 없습니다</p>
+          <p className="py-8 text-center text-xs text-muted-foreground">
+            {isSearching ? '검색 결과가 없습니다' : '이 카테고리에 RSS 소스가 없습니다'}
+          </p>
         )}
       </div>
     </div>
