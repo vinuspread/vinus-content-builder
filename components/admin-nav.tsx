@@ -21,7 +21,8 @@ export function AdminNav() {
 
   useEffect(() => {
     if (!lastResult) return
-    const timer = setTimeout(clearResult, 5000)
+    const duration = lastResult.failed > 0 ? 15000 : 5000
+    const timer = setTimeout(clearResult, duration)
     return () => clearTimeout(timer)
   }, [lastResult, clearResult])
 
