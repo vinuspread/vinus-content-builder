@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to parse Claude response' }, { status: 500 })
   }
 
-  if (!Array.isArray(result.carousel) || result.carousel.length !== 6) {
+  if (!Array.isArray(result.carousel) || result.carousel.length < 4) {
     return NextResponse.json(
-      { error: `Carousel must have exactly 6 cards, got ${result.carousel?.length ?? 0}` },
+      { error: `Carousel must have at least 4 cards, got ${result.carousel?.length ?? 0}` },
       { status: 500 }
     )
   }
