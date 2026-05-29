@@ -15,11 +15,26 @@ type RssItem = {
   pubDate?: string
 }
 
+async function getAdKeywords(): Promise<string[]> {
+  const { data } = await supabaseServer
+    .from('collection_filters')
+    .select('filter_value')
+    .eq('filter_key', 'ad_keywords')
+    .single()
+  if (!data?.filter_value) return ['광고', '협찬', '할인', '이벤트']
+  return data.filter_value.split(',').map((k: string) => k.trim()).filter(Boolean)
+}
+
+function containsAdKeyword(text: string, adKeywords: string[]): boolean {
+  const lower = text.toLowerCase()
+  return adKeywords.some(k => lower.includes(k.toLowerCase()))
+}
+
 export async function collectRss(limitPerFeed = 10) {
-  const { data: sources } = await supabaseServer
-    .from('rss_sources')
-    .select('*')
-    .eq('is_active', true)
+  const [sourcesResult, adKeywords] = await Promise.all([
+    supabaseServer.from('rss_sources').select('*').eq('is_active', true),
+    getAdKeywords(),
+  ])
 
   const results: Array<{
     source_type: 'rss'
@@ -37,12 +52,14 @@ export async function collectRss(limitPerFeed = 10) {
     raw_data: Record<string, unknown>
   }> = []
 
-  for (const source of sources ?? []) {
+  for (const source of sourcesResult.data ?? []) {
     try {
       const feed = await parser.parseURL(source.url)
       const items = (feed.items as RssItem[]).slice(0, limitPerFeed)
       for (const item of items) {
         if (!item.link) continue
+        const text = `${item.title ?? ''} ${item.contentSnippet ?? ''}`
+        if (containsAdKeyword(text, adKeywords)) continue
         results.push({
           source_type: 'rss',
           source_name: source.name,

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { CollectionFilter } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 
 export function FiltersClient({ initialFilters }: { initialFilters: CollectionFilter[] }) {
@@ -28,14 +29,31 @@ export function FiltersClient({ initialFilters }: { initialFilters: CollectionFi
         {filters.map((filter, i) => (
           <div key={filter.id} className="space-y-1.5">
             <Label>{filter.label ?? filter.filter_key}</Label>
-            <Input
-              value={filter.filter_value}
-              onChange={e => {
-                const updated = [...filters]
-                updated[i] = { ...filter, filter_value: e.target.value }
-                setFilters(updated)
-              }}
-            />
+            {filter.filter_key === 'ad_keywords' ? (
+              <>
+                <Textarea
+                  value={filter.filter_value}
+                  rows={6}
+                  onChange={e => {
+                    const updated = [...filters]
+                    updated[i] = { ...filter, filter_value: e.target.value }
+                    setFilters(updated)
+                  }}
+                  className="font-mono text-sm"
+                  placeholder="광고,협찬,할인,이벤트"
+                />
+                <p className="text-xs text-muted-foreground">쉼표(,)로 구분. 이 키워드가 포함된 콘텐츠는 수집에서 제외됩니다.</p>
+              </>
+            ) : (
+              <Input
+                value={filter.filter_value}
+                onChange={e => {
+                  const updated = [...filters]
+                  updated[i] = { ...filter, filter_value: e.target.value }
+                  setFilters(updated)
+                }}
+              />
+            )}
           </div>
         ))}
       </div>
