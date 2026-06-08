@@ -43,20 +43,26 @@ export async function POST(req: NextRequest) {
   }
 
   const raw = (msg.content[0] as { type: string; text: string }).text
-  const jsonMatch = raw.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
+
+  const stripped = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+
+  const jsonMatch = stripped.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    console.error('[manual] no JSON in response, raw[:500]:', raw.slice(0, 500))
+    return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
+  }
 
   let result: GenerateResult
   try {
     result = JSON.parse(jsonMatch[0]) as GenerateResult
   } catch {
-    const fixed = jsonMatch[0].replace(/"((?:[^"\\]|\\[\s\S])*)"/g, (match) =>
-      match.replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+    const fixed = jsonMatch[0].replace(/("(?:[^"\\]|\\.)*")/g, (m) =>
+      m.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t')
     )
     try {
       result = JSON.parse(fixed) as GenerateResult
     } catch (e2) {
-      console.error('[manual] JSON parse error after fix:', e2, 'raw[:300]:', raw.slice(0, 300))
+      console.error('[manual] JSON parse error after fix:', e2, '\nraw[:500]:', raw.slice(0, 500))
       return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
     }
   }

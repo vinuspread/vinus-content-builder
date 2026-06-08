@@ -49,9 +49,13 @@ export async function POST(req: NextRequest) {
   }
 
   const raw = (msg.content[0] as { type: string; text: string }).text
-  const jsonMatch = raw.match(/\{[\s\S]*\}/)
+
+  // Strip code fences if Claude wrapped output anyway
+  const stripped = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+
+  const jsonMatch = stripped.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
-    console.error('[generate] no JSON in response, raw[:300]:', raw.slice(0, 300))
+    console.error('[generate] no JSON in response, raw[:500]:', raw.slice(0, 500))
     return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
   }
 
@@ -59,15 +63,14 @@ export async function POST(req: NextRequest) {
   try {
     result = JSON.parse(jsonMatch[0]) as GenerateResult
   } catch {
-    // Claude sometimes outputs literal newlines inside JSON string values.
-    // Fix by replacing them only within quoted strings.
-    const fixed = jsonMatch[0].replace(/"((?:[^"\\]|\\[\s\S])*)"/g, (match) =>
-      match.replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+    // Fix literal newlines inside JSON string values
+    const fixed = jsonMatch[0].replace(/("(?:[^"\\]|\\.)*")/g, (m) =>
+      m.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t')
     )
     try {
       result = JSON.parse(fixed) as GenerateResult
     } catch (e2) {
-      console.error('[generate] JSON parse error after fix:', e2, 'raw[:300]:', raw.slice(0, 300))
+      console.error('[generate] JSON parse error after fix:', e2, '\nraw[:500]:', raw.slice(0, 500))
       return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
     }
   }
