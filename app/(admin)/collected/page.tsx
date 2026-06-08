@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { supabaseServer } from '@/lib/supabase/server'
 import { CollectedList } from './client'
 
@@ -36,9 +37,11 @@ export default async function CollectedPage({
   const { data: contents } = await query
 
   return (
-    <CollectedList
-      contents={contents ?? []}
-      contentTypes={contentTypes ?? []}
-    />
+    <Suspense>
+      <CollectedList
+        contents={contents ?? []}
+        contentTypes={contentTypes ?? []}
+      />
+    </Suspense>
   )
 }

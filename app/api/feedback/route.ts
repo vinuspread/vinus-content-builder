@@ -72,10 +72,17 @@ export async function POST(req: NextRequest) {
 
   let result: GenerateResult
   try {
-    result = JSON.parse(jsonStr)
-  } catch (e) {
-    console.error('[feedback] JSON parse error:', e, 'jsonStr[:200]:', jsonStr.slice(0, 200))
-    return NextResponse.json({ error: 'Failed to parse Claude response' }, { status: 500 })
+    result = JSON.parse(jsonStr) as GenerateResult
+  } catch {
+    const fixed = jsonStr.replace(/"((?:[^"\\]|\\[\s\S])*)"/g, (match) =>
+      match.replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+    )
+    try {
+      result = JSON.parse(fixed) as GenerateResult
+    } catch (e2) {
+      console.error('[feedback] JSON parse error after fix:', e2, 'jsonStr[:200]:', jsonStr.slice(0, 200))
+      return NextResponse.json({ error: 'Failed to parse Claude response' }, { status: 500 })
+    }
   }
 
   if (!Array.isArray(result.carousel) || result.carousel.length !== 6) {

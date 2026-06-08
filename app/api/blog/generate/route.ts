@@ -75,19 +75,18 @@ export async function POST(req: NextRequest) {
   console.log('[blog/generate] Claude done, stop_reason:', msg.stop_reason)
 
   const raw = (msg.content[0] as { type: string; text: string }).text
-  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
-  const jsonStr = fenceMatch ? fenceMatch[1].trim() : raw.match(/\{[\s\S]*\}/)?.[0]
-  if (!jsonStr) {
-    console.error('[blog/generate] no JSON in response, raw[:200]:', raw.slice(0, 200))
+
+  const titleMatch = raw.match(/===TITLE===\s*([\s\S]*?)\s*===CONTENT===/)
+  const contentMatch = raw.match(/===CONTENT===\s*([\s\S]*)$/)
+
+  if (!titleMatch || !contentMatch) {
+    console.error('[blog/generate] missing markers in response, raw[:300]:', raw.slice(0, 300))
     return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
   }
 
-  let result: BlogGenerateResult
-  try {
-    result = JSON.parse(jsonStr)
-  } catch (e) {
-    console.error('[blog/generate] JSON parse error:', e)
-    return NextResponse.json({ error: 'Failed to parse Claude response' }, { status: 500 })
+  const result: BlogGenerateResult = {
+    blogTitle: titleMatch[1].trim(),
+    blogContent: contentMatch[1].trim(),
   }
 
   if (!result.blogTitle || !result.blogContent) {

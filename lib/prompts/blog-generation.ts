@@ -31,9 +31,13 @@ const BASE_SYSTEM_PROMPT = `당신은 바이너스프레드 블로그 필진입�
 8. 도입부는 독자의 현실적인 고민이나 상황으로 시작해 200자 이상 쓴다
 9. 마무리는 핵심 내용을 한 문장으로 정리하고 실무자를 위한 다음 행동을 제안하며 150자 이상 쓴다
 
-출력 형식 (반드시 JSON만 반환):
-코드 블록 없이 아래 구조의 JSON 텍스트만 반환하세요.
-{"blogTitle": "SEO 제목 (30자 이내)", "blogContent": "블로그 본문 전체 (plain text, 줄바꿈으로만 구분)"}
+출력 형식 (반드시 아래 구분자 형식으로만 반환):
+JSON 사용 금지. 코드블록 사용 금지. 아래 형식 그대로 반환하세요.
+
+===TITLE===
+SEO 제목 (30자 이내)
+===CONTENT===
+블로그 본문 전체 (줄바꿈으로만 구분)
 `
 
 export function buildBlogGenerationSystemPrompt(

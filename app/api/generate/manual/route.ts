@@ -29,12 +29,18 @@ export async function POST(req: NextRequest) {
 
   const userPrompt = buildManualGenerationUserPrompt(topic, content, searchResults)
 
-  const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 5000,
-    system: GENERATION_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userPrompt }],
-  })
+  let msg: Awaited<ReturnType<typeof anthropic.messages.create>>
+  try {
+    msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 5000,
+      system: GENERATION_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+  } catch (e) {
+    console.error('[manual] Claude error:', e)
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Claude API error' }, { status: 500 })
+  }
 
   const raw = (msg.content[0] as { type: string; text: string }).text
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
@@ -42,9 +48,17 @@ export async function POST(req: NextRequest) {
 
   let result: GenerateResult
   try {
-    result = JSON.parse(jsonMatch[0])
+    result = JSON.parse(jsonMatch[0]) as GenerateResult
   } catch {
-    return NextResponse.json({ error: 'Failed to parse Claude response' }, { status: 500 })
+    const fixed = jsonMatch[0].replace(/"((?:[^"\\]|\\[\s\S])*)"/g, (match) =>
+      match.replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+    )
+    try {
+      result = JSON.parse(fixed) as GenerateResult
+    } catch (e2) {
+      console.error('[manual] JSON parse error after fix:', e2, 'raw[:300]:', raw.slice(0, 300))
+      return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
+    }
   }
 
   if (!Array.isArray(result.carousel) || result.carousel.length < 4) {

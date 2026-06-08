@@ -35,18 +35,42 @@ export async function POST(req: NextRequest) {
     source.original_url
   )
 
-  const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 8192,
-    system: GENERATION_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userPrompt }],
-  })
+  let msg: Awaited<ReturnType<typeof anthropic.messages.create>>
+  try {
+    msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 8192,
+      system: GENERATION_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+  } catch (e) {
+    console.error('[generate] Claude error:', e)
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Claude API error' }, { status: 500 })
+  }
 
   const raw = (msg.content[0] as { type: string; text: string }).text
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
+  if (!jsonMatch) {
+    console.error('[generate] no JSON in response, raw[:300]:', raw.slice(0, 300))
+    return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
+  }
 
-  const result: GenerateResult = JSON.parse(jsonMatch[0])
+  let result: GenerateResult
+  try {
+    result = JSON.parse(jsonMatch[0]) as GenerateResult
+  } catch {
+    // Claude sometimes outputs literal newlines inside JSON string values.
+    // Fix by replacing them only within quoted strings.
+    const fixed = jsonMatch[0].replace(/"((?:[^"\\]|\\[\s\S])*)"/g, (match) =>
+      match.replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+    )
+    try {
+      result = JSON.parse(fixed) as GenerateResult
+    } catch (e2) {
+      console.error('[generate] JSON parse error after fix:', e2, 'raw[:300]:', raw.slice(0, 300))
+      return NextResponse.json({ error: 'Invalid Claude response' }, { status: 500 })
+    }
+  }
 
   if (!Array.isArray(result.carousel) || result.carousel.length < 4) {
     return NextResponse.json({ error: `Carousel must have at least 4 cards, got ${result.carousel?.length ?? 0}` }, { status: 500 })
